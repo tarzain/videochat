@@ -2,22 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import {
-  Conversation,
-  ConversationContent,
-  ConversationEmptyState,
-  ConversationScrollButton,
-} from "@/components/ai-elements/conversation";
-import {
-  Message,
-  MessageContent,
-  MessageResponse,
-} from "@/components/ai-elements/message";
 import type { PromptInputMessage } from "@/components/ai-elements/prompt-input";
 import {
   PromptInput,
   PromptInputBody,
-  PromptInputButton,
   PromptInputFooter,
   PromptInputSubmit,
   PromptInputTextarea,
@@ -33,6 +21,7 @@ import {
 } from "@/components/ai-elements/tool";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { GeminiLiveClient } from "@/lib/live-client";
 import { cn } from "@/lib/utils";
 import type {
@@ -50,6 +39,7 @@ import {
   VideoOffIcon,
   WifiIcon,
   WifiOffIcon,
+  XIcon,
 } from "lucide-react";
 
 const INITIAL_PERMISSIONS: LivePermissionsState = {
@@ -58,12 +48,24 @@ const INITIAL_PERMISSIONS: LivePermissionsState = {
 };
 
 const SUGGESTIONS = [
-  "What time is it in Tokyo?",
-  "Summarize what you see from my camera.",
   "Generate a poster of a moonlit tea shop.",
-  "Help me brainstorm a landing page headline.",
-  "Walk me through a React state bug.",
+  "Summarize what you see from my camera.",
+  "What time is it in Tokyo?",
 ];
+
+type AiStageVisual =
+  | {
+      kind: "idle";
+      title: string;
+      subtitle: string;
+    }
+  | {
+      kind: "image";
+      title: string;
+      subtitle: string;
+      imageUrl: string;
+      isPreview: boolean;
+    };
 
 export function LiveChat() {
   const clientRef = useRef<GeminiLiveClient | null>(null);
@@ -79,6 +81,10 @@ export function LiveChat() {
   const [microphoneEnabled, setMicrophoneEnabled] = useState(true);
   const [cameraEnabled, setCameraEnabled] = useState(false);
   const [pushToTalkActive, setPushToTalkActive] = useState(false);
+  const [historyDrawerOpen, setHistoryDrawerOpen] = useState(false);
+  const [userPreviewStream, setUserPreviewStream] = useState<MediaStream | null>(
+    null,
+  );
 
   useEffect(() => {
     const client = new GeminiLiveClient({
@@ -87,10 +93,13 @@ export function LiveChat() {
         setStatusDetail(detail ?? detailForStatus(nextStatus));
       },
       onTranscriptEntry: (entry) => {
-        setTranscript((current) => [...current, entry].slice(-120));
+        setTranscript((current) => [...current, entry].slice(-180));
       },
       onPermissionsChange: (nextPermissions) => {
         setPermissions(nextPermissions);
+      },
+      onCameraStreamChange: (stream) => {
+        setUserPreviewStream(stream);
       },
     });
 
@@ -111,17 +120,54 @@ export function LiveChat() {
         ? "submitted"
         : "ready";
 
-  const statusTone = useMemo(() => {
-    if (status === "connected") {
-      return "bg-emerald-500/12 text-emerald-200";
+  const stageVisual = useMemo<AiStageVisual>(() => {
+    const latestImageEntry = [...transcript]
+      .reverse()
+      .find((entry) => entry.tool?.imageUrl);
+
+    if (latestImageEntry?.tool?.imageUrl) {
+      const outputStatus =
+        Boolean(
+          latestImageEntry.tool.output &&
+            typeof latestImageEntry.tool.output === "object" &&
+            "status" in latestImageEntry.tool.output &&
+            latestImageEntry.tool.output.status === "preview",
+        );
+
+      return {
+        kind: "image",
+        imageUrl: latestImageEntry.tool.imageUrl,
+        isPreview: outputStatus,
+        title: outputStatus ? "AI Assistant is presenting" : "AI Assistant presented",
+        subtitle: outputStatus
+          ? "Flux preview image"
+          : "Latest generated image on stage",
+      };
     }
 
-    if (status === "error") {
-      return "bg-red-500/12 text-red-200";
-    }
+    const imageStatusEntry = [...transcript].reverse().find((entry) => {
+      if (entry.role !== "system" || entry.kind !== "status") {
+        return false;
+      }
 
-    return "bg-secondary text-secondary-foreground";
-  }, [status]);
+      return /image generation/i.test(entry.text);
+    });
+
+    return {
+      kind: "idle",
+      title: connected ? "AI Assistant is live" : "AI Assistant camera is off",
+      subtitle: imageStatusEntry?.text ?? "Waiting to speak or present something visual.",
+    };
+  }, [connected, transcript]);
+
+  const activeCaption = useMemo(() => {
+    return [...transcript]
+      .reverse()
+      .find((entry) => entry.role === "model" && entry.kind === "text")
+      ?.text;
+  }, [transcript]);
+
+  const historyEntries = useMemo(() => transcript, [transcript]);
 
   const connect = async () => {
     await clientRef.current?.connect();
@@ -176,320 +222,447 @@ export function LiveChat() {
   };
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-6 px-4 py-6 md:px-6 lg:py-8">
-      <section className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
-        <aside className="flex flex-col gap-4 rounded-3xl border border-border/80 bg-card/80 p-5 shadow-2xl shadow-black/20 backdrop-blur">
-          <div className="space-y-3">
-            <Badge className="rounded-full bg-primary/14 px-3 py-1 text-primary hover:bg-primary/14">
-              Gemini Live + AI Elements
-            </Badge>
-            <div className="space-y-2">
-              <h1 className="text-3xl font-semibold tracking-tight">
-                Voice-first Gemini chat with tools and optional camera input.
-              </h1>
-              <p className="text-sm leading-6 text-muted-foreground">
-                Browser media streams directly to Gemini Live through ephemeral
-                tokens. Text, tool calls, and session state render through AI
-                Elements conversation primitives.
-              </p>
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top,#222a3a_0%,#0b0d12_42%,#050608_100%)] text-foreground">
+      <section className="mx-auto flex min-h-screen w-full max-w-[1600px] flex-col p-3 md:p-5">
+        <div className="relative flex min-h-[calc(100vh-1.5rem)] flex-1 overflow-hidden rounded-[32px] border border-white/10 bg-[#0b0d12] shadow-[0_30px_120px_rgba(0,0,0,0.45)] md:min-h-[calc(100vh-2.5rem)]">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(64,130,255,0.16),transparent_30%),radial-gradient(circle_at_top_right,rgba(255,221,128,0.14),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0))]" />
+
+          <div className="relative flex min-h-full flex-1 flex-col">
+            <header className="absolute inset-x-0 top-0 z-20 flex items-start justify-between gap-4 p-4 md:p-6">
+              <div className="space-y-2">
+                <Badge className="rounded-full bg-white/10 px-3 py-1 text-white hover:bg-white/10">
+                  Gemini Live Call
+                </Badge>
+                <div>
+                  <h1 className="text-2xl font-semibold tracking-tight text-white md:text-3xl">
+                    AI Assistant
+                  </h1>
+                  <p className="text-sm text-white/70">{statusDetail}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Badge
+                  className={cn(
+                    "rounded-full px-3 py-1 capitalize text-white",
+                    status === "connected"
+                      ? "bg-emerald-500/20"
+                      : status === "error"
+                        ? "bg-red-500/20"
+                        : "bg-white/10",
+                  )}
+                >
+                  {status}
+                </Badge>
+                <Button
+                  className="rounded-full border-white/15 bg-white/10 text-white hover:bg-white/15"
+                  onClick={() => setHistoryDrawerOpen((current) => !current)}
+                  type="button"
+                  variant="outline"
+                >
+                  {historyDrawerOpen ? "Hide history" : "Show history"}
+                </Button>
+              </div>
+            </header>
+
+            <div className="relative flex min-h-[440px] flex-1 items-center justify-center overflow-hidden px-4 pb-52 pt-28 md:px-6 md:pb-56 md:pt-32">
+              {stageVisual.kind === "image" ? (
+                <div className="relative h-full w-full overflow-hidden rounded-[28px] border border-white/10 bg-black/50 shadow-2xl">
+                  <div
+                    aria-hidden="true"
+                    className="absolute inset-0 bg-cover bg-center"
+                    style={{ backgroundImage: `url(${stageVisual.imageUrl})` }}
+                  />
+                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,6,10,0.22),rgba(4,6,10,0.05)_40%,rgba(4,6,10,0.42))]" />
+                  <div className="absolute left-4 top-4 flex items-center gap-2 rounded-full bg-black/55 px-3 py-1.5 text-sm text-white backdrop-blur md:left-5 md:top-5">
+                    <ImageIcon className="size-4" />
+                    {stageVisual.isPreview ? "AI preview" : "AI presenting"}
+                  </div>
+                </div>
+              ) : (
+                <AiIdleStage
+                  connected={connected}
+                  subtitle={stageVisual.subtitle}
+                  title={stageVisual.title}
+                />
+              )}
+
+              <div className="absolute bottom-24 right-4 z-20 w-[160px] md:bottom-28 md:right-6 md:w-[220px]">
+                {cameraEnabled ? (
+                  <LocalPreviewTile
+                    permissionState={permissions.camera}
+                    stream={userPreviewStream}
+                  />
+                ) : null}
+              </div>
+
+              {activeCaption ? (
+                <div className="pointer-events-none absolute bottom-40 left-1/2 z-20 w-[min(92vw,820px)] -translate-x-1/2 px-3 md:bottom-44">
+                  <div className="mx-auto rounded-2xl border border-white/10 bg-black/68 px-4 py-3 text-center text-base leading-7 text-white shadow-xl backdrop-blur md:text-lg">
+                    <span className="font-medium text-white/80">AI Assistant:</span>{" "}
+                    {activeCaption}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-64 bg-[linear-gradient(180deg,rgba(11,13,18,0),rgba(11,13,18,0.82)_45%,rgba(11,13,18,0.98))]" />
+
+            <div className="absolute inset-x-0 bottom-0 z-20 p-3 md:p-5">
+              <div className="mx-auto flex w-full max-w-[1040px] flex-col gap-3">
+                <Suggestions>
+                  {SUGGESTIONS.map((suggestion) => (
+                    <Suggestion
+                      disabled={!connected}
+                      key={suggestion}
+                      onClick={sendSuggestion}
+                      suggestion={suggestion}
+                    />
+                  ))}
+                </Suggestions>
+
+                <div className="rounded-[28px] border border-white/10 bg-black/55 p-3 shadow-2xl backdrop-blur-xl md:p-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      className="rounded-full"
+                      disabled={connectionBusy || connected}
+                      onClick={connect}
+                      type="button"
+                    >
+                      <WifiIcon className="size-4" />
+                      Connect
+                    </Button>
+                    <Button
+                      className="rounded-full"
+                      disabled={connectionBusy || !connected}
+                      onClick={disconnect}
+                      type="button"
+                      variant="outline"
+                    >
+                      <WifiOffIcon className="size-4" />
+                      Disconnect
+                    </Button>
+                    <Button
+                      className="rounded-full"
+                      disabled={!connected}
+                      onClick={toggleMicrophone}
+                      type="button"
+                      variant={microphoneEnabled ? "secondary" : "outline"}
+                    >
+                      {microphoneEnabled ? (
+                        <MicIcon className="size-4" />
+                      ) : (
+                        <MicOffIcon className="size-4" />
+                      )}
+                      {microphoneEnabled ? "Mic on" : "Mic off"}
+                    </Button>
+                    <Button
+                      className="rounded-full"
+                      disabled={!connected}
+                      onClick={() => void toggleCamera()}
+                      type="button"
+                      variant={cameraEnabled ? "secondary" : "outline"}
+                    >
+                      {cameraEnabled ? (
+                        <VideoIcon className="size-4" />
+                      ) : (
+                        <VideoOffIcon className="size-4" />
+                      )}
+                      {cameraEnabled ? "Camera on" : "Camera off"}
+                    </Button>
+                    <Button
+                      className="rounded-full"
+                      disabled={!connected}
+                      onClick={() =>
+                        switchMode(
+                          inputMode === "continuous" ? "push-to-talk" : "continuous",
+                        )
+                      }
+                      type="button"
+                      variant="outline"
+                    >
+                      <AudioLinesIcon className="size-4" />
+                      {inputMode === "continuous" ? "Continuous" : "Push to talk"}
+                    </Button>
+                    <Button
+                      className="rounded-full"
+                      disabled={!connected || inputMode !== "push-to-talk"}
+                      onMouseDown={() => handlePushToTalk(true)}
+                      onMouseLeave={() => handlePushToTalk(false)}
+                      onMouseUp={() => handlePushToTalk(false)}
+                      onTouchEnd={() => handlePushToTalk(false)}
+                      onTouchStart={() => handlePushToTalk(true)}
+                      type="button"
+                      variant={pushToTalkActive ? "default" : "outline"}
+                    >
+                      <AudioLinesIcon className="size-4" />
+                      {pushToTalkActive ? "Listening now" : "Hold to talk"}
+                    </Button>
+                  </div>
+
+                  <PromptInput
+                    className="mt-3 rounded-[24px] border border-white/10 bg-white/5"
+                    onError={() => undefined}
+                    onSubmit={(message) => void sendPrompt(message)}
+                  >
+                    <PromptInputBody>
+                      <PromptInputTextarea
+                        className="text-white placeholder:text-white/45"
+                        onChange={(event) => setDraft(event.target.value)}
+                        placeholder={
+                          connected
+                            ? "Send a text prompt into the live call"
+                            : "Connect first to send a prompt"
+                        }
+                        value={draft}
+                      />
+                    </PromptInputBody>
+                    <PromptInputFooter>
+                      <PromptInputTools>
+                        <Badge className="rounded-full bg-white/10 px-3 py-1 text-white/80 hover:bg-white/10">
+                          Mic {permissionLabel(permissions.microphone)}
+                        </Badge>
+                        <Badge className="rounded-full bg-white/10 px-3 py-1 text-white/80 hover:bg-white/10">
+                          Camera {permissionLabel(permissions.camera)}
+                        </Badge>
+                      </PromptInputTools>
+                      <PromptInputSubmit
+                        disabled={!connected || !draft.trim()}
+                        status={submitStatus}
+                      />
+                    </PromptInputFooter>
+                  </PromptInput>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="grid gap-2">
-            <StatusRow label="Session">
-              <Badge className={cn("rounded-full px-3 py-1 capitalize", statusTone)}>
-                {status}
-              </Badge>
-            </StatusRow>
-            <StatusRow label="Mic Permission">
-              <PermissionBadge value={permissions.microphone} />
-            </StatusRow>
-            <StatusRow label="Camera Permission">
-              <PermissionBadge value={permissions.camera} />
-            </StatusRow>
-            <StatusRow label="Mode">
-              <Badge className="rounded-full bg-secondary px-3 py-1 capitalize text-secondary-foreground">
-                {inputMode}
-              </Badge>
-            </StatusRow>
-          </div>
-
-          <p className="rounded-2xl border border-border/70 bg-background/30 px-4 py-3 text-sm leading-6 text-muted-foreground">
-            {statusDetail}
-          </p>
-
-          <div className="grid gap-2">
-            <Button
-              className="justify-start"
-              disabled={connectionBusy || connected}
-              onClick={connect}
-              type="button"
-            >
-              <WifiIcon className="size-4" />
-              Connect
-            </Button>
-            <Button
-              className="justify-start"
-              disabled={connectionBusy || !connected}
-              onClick={disconnect}
-              type="button"
-              variant="outline"
-            >
-              <WifiOffIcon className="size-4" />
-              Disconnect
-            </Button>
-          </div>
-
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
-            <Button
-              className="justify-start"
-              disabled={!connected}
-              onClick={toggleMicrophone}
-              type="button"
-              variant={microphoneEnabled ? "secondary" : "outline"}
-            >
-              {microphoneEnabled ? (
-                <MicIcon className="size-4" />
-              ) : (
-                <MicOffIcon className="size-4" />
-              )}
-              {microphoneEnabled ? "Mute mic" : "Unmute mic"}
-            </Button>
-            <Button
-              className="justify-start"
-              disabled={!connected}
-              onClick={() => void toggleCamera()}
-              type="button"
-              variant={cameraEnabled ? "secondary" : "outline"}
-            >
-              {cameraEnabled ? (
-                <VideoIcon className="size-4" />
-              ) : (
-                <VideoOffIcon className="size-4" />
-              )}
-              {cameraEnabled ? "Stop camera" : "Start camera"}
-            </Button>
-          </div>
-
-          <div className="grid gap-2">
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                disabled={!connected}
-                onClick={() => switchMode("continuous")}
-                type="button"
-                variant={inputMode === "continuous" ? "secondary" : "outline"}
-              >
-                Continuous
-              </Button>
-              <Button
-                disabled={!connected}
-                onClick={() => switchMode("push-to-talk")}
-                type="button"
-                variant={inputMode === "push-to-talk" ? "secondary" : "outline"}
-              >
-                Push to talk
-              </Button>
-            </div>
-            <Button
-              className="justify-start"
-              disabled={!connected || inputMode !== "push-to-talk"}
-              onMouseDown={() => handlePushToTalk(true)}
-              onMouseLeave={() => handlePushToTalk(false)}
-              onMouseUp={() => handlePushToTalk(false)}
-              onTouchEnd={() => handlePushToTalk(false)}
-              onTouchStart={() => handlePushToTalk(true)}
-              type="button"
-              variant={pushToTalkActive ? "default" : "outline"}
-            >
-              <AudioLinesIcon className="size-4" />
-              {pushToTalkActive ? "Listening now" : "Hold to talk"}
-            </Button>
-          </div>
-
-          <div className="rounded-2xl border border-border/70 bg-background/30 px-4 py-3 text-sm text-muted-foreground">
-            Ask for the current time in a timezone like{" "}
-            <code className="font-mono text-foreground">Europe/London</code>,
-            or ask Gemini to generate an illustration and optionally use your
-            current camera image as reference.
-          </div>
-        </aside>
-
-        <section className="flex min-h-[70vh] flex-col overflow-hidden rounded-3xl border border-border/80 bg-card/75 shadow-2xl shadow-black/20 backdrop-blur">
-          <div className="border-b border-border/80 px-4 py-3 md:px-5">
-            <div className="mb-3 flex items-center justify-between gap-3">
+          <div
+            className={cn(
+              "absolute inset-y-0 right-0 z-30 flex w-full max-w-[390px] flex-col border-l border-white/10 bg-[#0d1016]/95 shadow-2xl backdrop-blur-2xl transition-transform duration-300 ease-out md:w-[390px]",
+              historyDrawerOpen ? "translate-x-0" : "translate-x-full",
+            )}
+          >
+            <div className="flex items-center justify-between border-b border-white/10 px-4 py-4">
               <div>
-                <h2 className="text-lg font-medium">Conversation</h2>
-                <p className="text-sm text-muted-foreground">
-                  User turns, Gemini responses, and live tool activity.
+                <h2 className="text-lg font-semibold text-white">Call history</h2>
+                <p className="text-sm text-white/60">
+                  Transcript, tool activity, and system events
                 </p>
               </div>
-              <Badge className="rounded-full bg-background/60 px-3 py-1 text-muted-foreground hover:bg-background/60">
-                {transcript.length} events
-              </Badge>
+              <Button
+                className="rounded-full border-white/15 bg-white/10 text-white hover:bg-white/15"
+                onClick={() => setHistoryDrawerOpen(false)}
+                type="button"
+                variant="outline"
+              >
+                <XIcon className="size-4" />
+              </Button>
             </div>
 
-            <Suggestions>
-              {SUGGESTIONS.map((suggestion) => (
-                <Suggestion
-                  disabled={!connected}
-                  key={suggestion}
-                  onClick={sendSuggestion}
-                  suggestion={suggestion}
-                />
-              ))}
-            </Suggestions>
-          </div>
-
-          <div className="min-h-0 flex-1">
-            <Conversation className="h-full">
-              <ConversationContent className="gap-5 p-4 md:p-5">
-                {transcript.length === 0 ? (
-                  <ConversationEmptyState
-                    description="Connect the session to unlock audio playback, then start talking or type into the prompt input below."
-                    title="No live turns yet"
-                  />
+            <ScrollArea className="min-h-0 flex-1">
+              <div className="space-y-4 p-4">
+                {historyEntries.length === 0 ? (
+                  <div className="rounded-3xl border border-dashed border-white/10 bg-white/5 p-5 text-sm leading-6 text-white/60">
+                    Connect the session to start the call. Transcript and tool
+                    history will appear here while the main stage stays focused
+                    on the live experience.
+                  </div>
                 ) : (
-                  transcript.map((entry) => {
+                  historyEntries.map((entry) => {
                     if (entry.tool) {
                       return (
-                        <Message from="assistant" key={entry.id}>
-                          <MessageContent className="w-full max-w-2xl">
-                            <div className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-                              Tool
-                            </div>
-                            {entry.tool.imageUrl ? (
-                              <div className="mb-3 overflow-hidden rounded-2xl border border-border/70 bg-background/40">
-                                <div
-                                  aria-hidden="true"
-                                  className="aspect-square w-full bg-cover bg-center"
-                                  style={{
-                                    backgroundImage: `url(${entry.tool.imageUrl})`,
-                                  }}
-                                />
-                                <div className="flex items-center gap-2 border-t border-border/70 px-3 py-2 text-xs text-muted-foreground">
-                                  <ImageIcon className="size-3.5" />
-                                  Generated image
-                                </div>
-                              </div>
-                            ) : null}
-                            <Tool defaultOpen={entry.tool.state !== "output-available"}>
-                              <ToolHeader
-                                state={entry.tool.state}
-                                title={entry.tool.name}
-                                toolName={entry.tool.name}
-                                type="dynamic-tool"
+                        <div
+                          className="rounded-3xl border border-white/10 bg-white/[0.04] p-3"
+                          key={entry.id}
+                        >
+                          <div className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-white/50">
+                            Tool
+                          </div>
+                          {entry.tool.imageUrl ? (
+                            <div className="mb-3 overflow-hidden rounded-2xl border border-white/10 bg-black/50">
+                              <div
+                                aria-hidden="true"
+                                className="aspect-square w-full bg-cover bg-center"
+                                style={{
+                                  backgroundImage: `url(${entry.tool.imageUrl})`,
+                                }}
                               />
-                              <ToolContent>
-                                {entry.tool.input !== undefined ? (
-                                  <ToolInput input={entry.tool.input} />
-                                ) : null}
-                                <ToolOutput
-                                  errorText={entry.tool.errorText}
-                                  output={entry.tool.output}
-                                />
-                              </ToolContent>
-                            </Tool>
-                          </MessageContent>
-                        </Message>
+                            </div>
+                          ) : null}
+                          <Tool defaultOpen={entry.tool.state !== "output-available"}>
+                            <ToolHeader
+                              state={entry.tool.state}
+                              title={entry.tool.name}
+                              toolName={entry.tool.name}
+                              type="dynamic-tool"
+                            />
+                            <ToolContent>
+                              {entry.tool.input !== undefined ? (
+                                <ToolInput input={entry.tool.input} />
+                              ) : null}
+                              <ToolOutput
+                                errorText={entry.tool.errorText}
+                                output={entry.tool.output}
+                              />
+                            </ToolContent>
+                          </Tool>
+                          <div className="mt-2 text-[11px] text-white/45">
+                            {new Date(entry.timestamp).toLocaleTimeString()}
+                          </div>
+                        </div>
                       );
                     }
 
                     return (
-                      <Message
-                        from={entry.role === "user" ? "user" : "assistant"}
+                      <div
+                        className={cn(
+                          "rounded-3xl border p-3",
+                          entry.role === "model"
+                            ? "border-white/10 bg-white/[0.06]"
+                            : entry.role === "user"
+                              ? "border-sky-400/15 bg-sky-400/[0.08]"
+                              : "border-white/8 bg-white/[0.03]",
+                        )}
                         key={entry.id}
                       >
-                        <div className="space-y-2">
-                          {entry.role !== "user" ? (
-                            <div className="px-1 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-                              {entry.role}
-                            </div>
-                          ) : null}
-                          <MessageContent>
-                            <MessageResponse>{entry.text}</MessageResponse>
-                          </MessageContent>
-                          <div className="px-1 text-[11px] text-muted-foreground">
-                            {new Date(entry.timestamp).toLocaleTimeString()}
-                          </div>
+                        <div className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-white/50">
+                          {entry.role}
                         </div>
-                      </Message>
+                        <div className="text-sm leading-6 text-white/86">{entry.text}</div>
+                        <div className="mt-2 text-[11px] text-white/45">
+                          {new Date(entry.timestamp).toLocaleTimeString()}
+                        </div>
+                      </div>
                     );
                   })
                 )}
-              </ConversationContent>
-              <ConversationScrollButton />
-            </Conversation>
+              </div>
+            </ScrollArea>
           </div>
 
-          <div className="border-t border-border/80 p-4 md:p-5">
-            <PromptInput
-              onSubmit={(message) => void sendPrompt(message)}
-              onError={() => undefined}
-            >
-              <PromptInputBody>
-                <PromptInputTextarea
-                  onChange={(event) => setDraft(event.target.value)}
-                  placeholder={
-                    connected
-                      ? "Type a text turn for the live session"
-                      : "Connect first to send a prompt"
-                  }
-                  value={draft}
-                />
-              </PromptInputBody>
-              <PromptInputFooter>
-                <PromptInputTools>
-                  <PromptInputButton
-                    disabled={!connected}
-                    onClick={toggleMicrophone}
-                    type="button"
-                    variant={microphoneEnabled ? "secondary" : "ghost"}
-                  >
-                    {microphoneEnabled ? (
-                      <MicIcon className="size-4" />
-                    ) : (
-                      <MicOffIcon className="size-4" />
-                    )}
-                    Mic
-                  </PromptInputButton>
-                  <PromptInputButton
-                    disabled={!connected}
-                    onClick={() => void toggleCamera()}
-                    type="button"
-                    variant={cameraEnabled ? "secondary" : "ghost"}
-                  >
-                    {cameraEnabled ? (
-                      <VideoIcon className="size-4" />
-                    ) : (
-                      <VideoOffIcon className="size-4" />
-                    )}
-                    Camera
-                  </PromptInputButton>
-                  <PromptInputButton
-                    disabled={!connected}
-                    onClick={() =>
-                      switchMode(
-                        inputMode === "continuous" ? "push-to-talk" : "continuous",
-                      )
-                    }
-                    type="button"
-                    variant="ghost"
-                  >
-                    <AudioLinesIcon className="size-4" />
-                    {inputMode === "continuous" ? "Continuous" : "Push"}
-                  </PromptInputButton>
-                </PromptInputTools>
-                <PromptInputSubmit
-                  disabled={!connected || !draft.trim()}
-                  status={submitStatus}
-                />
-              </PromptInputFooter>
-            </PromptInput>
-          </div>
-        </section>
+          {historyDrawerOpen ? (
+            <button
+              aria-label="Close history drawer"
+              className="absolute inset-0 z-20 bg-black/35 md:hidden"
+              onClick={() => setHistoryDrawerOpen(false)}
+              type="button"
+            />
+          ) : null}
+        </div>
       </section>
     </main>
   );
+}
+
+function AiIdleStage({
+  connected,
+  subtitle,
+  title,
+}: {
+  connected: boolean;
+  subtitle: string;
+  title: string;
+}) {
+  return (
+    <div className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-[28px] border border-white/10 bg-[radial-gradient(circle_at_top,rgba(120,166,255,0.22),transparent_28%),linear-gradient(160deg,#131722_0%,#0b0d12_45%,#06070a_100%)] shadow-2xl">
+      <div className="absolute inset-0">
+        <div className="absolute left-[8%] top-[14%] size-48 rounded-full bg-sky-400/18 blur-3xl animate-pulse" />
+        <div className="absolute right-[10%] top-[18%] size-56 rounded-full bg-amber-300/14 blur-3xl animate-pulse [animation-delay:800ms]" />
+        <div className="absolute bottom-[10%] left-1/2 size-72 -translate-x-1/2 rounded-full bg-blue-500/12 blur-3xl animate-pulse [animation-delay:1400ms]" />
+      </div>
+
+      <div className="relative mx-auto flex max-w-2xl flex-col items-center gap-6 px-6 text-center">
+        <div className="flex h-28 w-28 items-center justify-center rounded-full border border-white/12 bg-white/6 shadow-[0_0_80px_rgba(90,145,255,0.18)]">
+          <div className="relative flex h-16 w-16 items-center justify-center">
+            <div className="absolute inset-0 rounded-full border border-white/10" />
+            <div className="absolute inset-2 rounded-full border border-white/12" />
+            <div className="h-6 w-6 rounded-full bg-white shadow-[0_0_40px_rgba(255,255,255,0.65)]" />
+          </div>
+        </div>
+        <div className="space-y-3">
+          <Badge className="rounded-full bg-white/10 px-3 py-1 text-white/75 hover:bg-white/10">
+            {connected ? "In call" : "Standby"}
+          </Badge>
+          <h2 className="text-3xl font-semibold tracking-tight text-white md:text-5xl">
+            {title}
+          </h2>
+          <p className="mx-auto max-w-xl text-sm leading-7 text-white/65 md:text-base">
+            {subtitle}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LocalPreviewTile({
+  permissionState,
+  stream,
+}: {
+  permissionState: LivePermissionsState["camera"];
+  stream: MediaStream | null;
+}) {
+  return (
+    <div className="overflow-hidden rounded-[24px] border border-white/15 bg-black/65 shadow-2xl backdrop-blur-xl">
+      <div className="aspect-[4/5] overflow-hidden bg-black">
+        {stream ? (
+          <LocalVideoPreview stream={stream} />
+        ) : (
+          <div className="flex h-full items-center justify-center bg-[linear-gradient(180deg,#161a22,#090b0f)] px-4 text-center text-sm text-white/55">
+            {permissionState === "denied"
+              ? "Camera access denied"
+              : "Starting local camera preview"}
+          </div>
+        )}
+      </div>
+      <div className="flex items-center justify-between px-3 py-2 text-sm text-white">
+        <span>You</span>
+        <span className="text-xs text-white/55">Local preview</span>
+      </div>
+    </div>
+  );
+}
+
+function LocalVideoPreview({ stream }: { stream: MediaStream }) {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+
+    if (!video) {
+      return;
+    }
+
+    video.srcObject = stream;
+    void video.play().catch(() => undefined);
+
+    return () => {
+      if (video.srcObject === stream) {
+        video.srcObject = null;
+      }
+    };
+  }, [stream]);
+
+  return (
+    <video
+      className="h-full w-full object-cover [transform:scaleX(-1)]"
+      muted
+      playsInline
+      ref={videoRef}
+    />
+  );
+}
+
+function permissionLabel(value: LivePermissionsState[keyof LivePermissionsState]) {
+  switch (value) {
+    case "granted":
+      return "granted";
+    case "denied":
+      return "denied";
+    default:
+      return "unknown";
+  }
 }
 
 function detailForStatus(status: LiveSessionStatus): string {
@@ -497,46 +670,12 @@ function detailForStatus(status: LiveSessionStatus): string {
     case "connecting":
       return "Requesting an ephemeral token and opening the Gemini Live session.";
     case "connected":
-      return "Session live. Audio output is unlocked and streaming to your speakers.";
+      return "Session live. Audio output is unlocked and the AI can present generated visuals.";
     case "disconnecting":
       return "Closing the live socket and tearing down local media tracks.";
     case "error":
-      return "The last live action failed. Check the latest conversation event.";
+      return "The last live action failed. Open history for the most recent event.";
     default:
       return "Ready to connect.";
   }
-}
-
-function StatusRow({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-3 rounded-2xl border border-border/70 bg-background/25 px-4 py-3">
-      <span className="text-sm text-muted-foreground">{label}</span>
-      {children}
-    </div>
-  );
-}
-
-function PermissionBadge({
-  value,
-}: {
-  value: LivePermissionsState[keyof LivePermissionsState];
-}) {
-  const className =
-    value === "granted"
-      ? "bg-emerald-500/12 text-emerald-200"
-      : value === "denied"
-        ? "bg-red-500/12 text-red-200"
-        : "bg-secondary text-secondary-foreground";
-
-  return (
-    <Badge className={cn("rounded-full px-3 py-1 capitalize", className)}>
-      {value}
-    </Badge>
-  );
 }

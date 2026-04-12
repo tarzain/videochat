@@ -25,6 +25,7 @@ interface LiveClientHandlers {
   onStatusChange: (status: LiveSessionStatus, detail?: string) => void;
   onTranscriptEntry: (entry: TranscriptEntry) => void;
   onPermissionsChange: (permissions: LivePermissionsState) => void;
+  onCameraStreamChange?: (stream: MediaStream | null) => void;
 }
 
 const INPUT_SAMPLE_RATE = 16_000;
@@ -202,6 +203,10 @@ export class GeminiLiveClient {
 
   setMicrophoneEnabled(enabled: boolean): void {
     this.microphoneEnabled = enabled;
+  }
+
+  getCameraStream(): MediaStream | null {
+    return this.cameraStream;
   }
 
   async setCameraEnabled(enabled: boolean): Promise<void> {
@@ -688,6 +693,7 @@ export class GeminiLiveClient {
     await this.videoElement.play();
 
     this.videoCanvas = document.createElement("canvas");
+    this.handlers.onCameraStreamChange?.(this.cameraStream);
     this.handlers.onPermissionsChange({
       microphone: this.microphoneStream ? "granted" : "unknown",
       camera: "granted",
@@ -786,6 +792,7 @@ export class GeminiLiveClient {
     this.videoElement?.pause();
     this.videoElement = null;
     this.videoCanvas = null;
+    this.handlers.onCameraStreamChange?.(null);
   }
 
   private async ensureOutputAudioContext(): Promise<void> {

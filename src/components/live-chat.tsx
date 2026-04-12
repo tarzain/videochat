@@ -274,7 +274,7 @@ export function LiveChat() {
                       {stageVisual.isPreview ? "vidi preview" : "vidi presenting"}
                     </div>
                   </div>
-                  <div className="flex min-h-0 flex-1 items-center justify-center bg-[var(--call-panel-muted)] p-4 md:p-8">
+                  <div className="flex min-h-0 flex-1 items-center justify-center p-4 md:p-8">
                     <img
                       alt="vidi presentation"
                       className="h-full max-h-full w-full max-w-full rounded-[12px] object-contain"
@@ -297,7 +297,7 @@ export function LiveChat() {
                     title="vidi"
                   >
                     {stageVisual.kind === "image" ? (
-                      <div className="flex h-full min-h-0 items-center justify-center bg-[var(--call-panel-muted)] p-3">
+                      <div className="flex h-full min-h-0 items-center justify-center p-3">
                         <img
                           alt="vidi presentation preview"
                           className="h-full max-h-full w-full max-w-full rounded-lg object-contain"
@@ -338,7 +338,7 @@ export function LiveChat() {
               ) : null}
 
               {activeCaption ? (
-                <div className="pointer-events-none absolute bottom-36 left-1/2 z-20 w-[min(92vw,760px)] -translate-x-1/2 px-3 md:bottom-40">
+                <div className="pointer-events-none absolute bottom-36 left-1/2 z-20 w-[min(94vw,1080px)] -translate-x-1/2 px-3 md:bottom-40">
                   <div className="mx-auto rounded-2xl bg-[var(--call-caption-bg)] px-4 py-3 text-center text-base leading-7 text-[var(--call-fg)] shadow-none md:text-lg">
                     <span className="font-medium text-[var(--call-caption-label)]">vidi:</span>{" "}
                     {activeCaption}

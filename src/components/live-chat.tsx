@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import type { PromptInputMessage } from "@/components/ai-elements/prompt-input";
 import {
@@ -222,40 +222,47 @@ export function LiveChat() {
   };
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,#222a3a_0%,#0b0d12_42%,#050608_100%)] text-foreground">
-      <section className="mx-auto flex min-h-screen w-full max-w-[1600px] flex-col p-3 md:p-5">
-        <div className="relative flex min-h-[calc(100vh-1.5rem)] flex-1 overflow-hidden rounded-[32px] border border-white/10 bg-[#0b0d12] shadow-[0_30px_120px_rgba(0,0,0,0.45)] md:min-h-[calc(100vh-2.5rem)]">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(64,130,255,0.16),transparent_30%),radial-gradient(circle_at_top_right,rgba(255,221,128,0.14),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0))]" />
+    <main className="min-h-screen bg-[#202124] text-foreground">
+      <section className="mx-auto flex min-h-screen w-full max-w-[1680px] flex-col p-2 md:p-4">
+        <div className="relative flex min-h-[calc(100vh-1rem)] flex-1 overflow-hidden rounded-[24px] border border-white/10 bg-[#111317] shadow-[0_12px_48px_rgba(0,0,0,0.28)] md:min-h-[calc(100vh-2rem)]">
+          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0))]" />
 
-          <div className="relative flex min-h-full flex-1 flex-col">
-            <header className="absolute inset-x-0 top-0 z-20 flex items-start justify-between gap-4 p-4 md:p-6">
-              <div className="space-y-2">
-                <Badge className="rounded-full bg-white/10 px-3 py-1 text-white hover:bg-white/10">
-                  Gemini Live Call
-                </Badge>
-                <div>
-                  <h1 className="text-2xl font-semibold tracking-tight text-white md:text-3xl">
+          <div
+            className={cn(
+              "relative flex min-h-full min-w-0 flex-1 flex-col transition-[width] duration-300 ease-out",
+              historyDrawerOpen && "md:max-w-[calc(100%-390px)]",
+            )}
+          >
+            <header className="absolute inset-x-0 top-0 z-20 flex items-start justify-between gap-4 px-4 py-4 md:px-6 md:py-5">
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#2b2d31] text-lg font-semibold text-white">
+                  G
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[13px] font-medium uppercase tracking-[0.18em] text-white/45">
+                    Gemini Live
+                  </div>
+                  <h1 className="truncate text-2xl font-medium text-white md:text-[2rem]">
                     AI Assistant
                   </h1>
-                  <p className="text-sm text-white/70">{statusDetail}</p>
                 </div>
               </div>
 
               <div className="flex items-center gap-2">
                 <Badge
                   className={cn(
-                    "rounded-full px-3 py-1 capitalize text-white",
+                    "rounded-full border border-white/10 px-3 py-1 capitalize text-white shadow-none",
                     status === "connected"
-                      ? "bg-emerald-500/20"
+                      ? "bg-[#1e3a2d]"
                       : status === "error"
-                        ? "bg-red-500/20"
-                        : "bg-white/10",
+                        ? "bg-[#4a2323]"
+                        : "bg-[#2a2d33]",
                   )}
                 >
                   {status}
                 </Badge>
                 <Button
-                  className="rounded-full border-white/15 bg-white/10 text-white hover:bg-white/15"
+                  className="rounded-full border-white/10 bg-[#2a2d33] text-white shadow-none hover:bg-[#32353b]"
                   onClick={() => setHistoryDrawerOpen((current) => !current)}
                   type="button"
                   variant="outline"
@@ -265,18 +272,23 @@ export function LiveChat() {
               </div>
             </header>
 
-            <div className="relative flex min-h-[440px] flex-1 items-center justify-center overflow-hidden px-4 pb-52 pt-28 md:px-6 md:pb-56 md:pt-32">
+            <div className="relative flex min-h-[440px] flex-1 items-stretch overflow-hidden px-3 pb-52 pt-24 md:px-5 md:pb-52 md:pt-24">
+              <div className="flex min-w-0 flex-1 gap-4 md:gap-5">
               {stageVisual.kind === "image" ? (
-                <div className="relative h-full w-full overflow-hidden rounded-[28px] border border-white/10 bg-black/50 shadow-2xl">
-                  <div
-                    aria-hidden="true"
-                    className="absolute inset-0 bg-cover bg-center"
-                    style={{ backgroundImage: `url(${stageVisual.imageUrl})` }}
-                  />
-                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,6,10,0.22),rgba(4,6,10,0.05)_40%,rgba(4,6,10,0.42))]" />
-                  <div className="absolute left-4 top-4 flex items-center gap-2 rounded-full bg-black/55 px-3 py-1.5 text-sm text-white backdrop-blur md:left-5 md:top-5">
-                    <ImageIcon className="size-4" />
-                    {stageVisual.isPreview ? "AI preview" : "AI presenting"}
+                <div className="relative min-w-0 flex-1 overflow-hidden rounded-[20px] border border-white/10 bg-[#1a1c20]">
+                  <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between px-4 py-4 md:px-5">
+                    <div className="flex items-center gap-2 rounded-full bg-black/40 px-3 py-1.5 text-sm text-white">
+                      <ImageIcon className="size-4" />
+                      {stageVisual.isPreview ? "AI preview" : "AI presenting"}
+                    </div>
+                    <div className="hidden text-sm text-white/55 md:block">{statusDetail}</div>
+                  </div>
+                  <div className="flex h-full w-full items-center justify-center bg-[#16181c] p-4 md:p-8">
+                    <img
+                      alt="AI presentation"
+                      className="max-h-full max-w-full rounded-[12px] object-contain"
+                      src={stageVisual.imageUrl}
+                    />
                   </div>
                 </div>
               ) : (
@@ -287,18 +299,56 @@ export function LiveChat() {
                 />
               )}
 
-              <div className="absolute bottom-24 right-4 z-20 w-[160px] md:bottom-28 md:right-6 md:w-[220px]">
-                {cameraEnabled ? (
+                <aside className="hidden w-[220px] shrink-0 flex-col gap-3 lg:flex">
+                  <ParticipantTile
+                    active={stageVisual.kind === "image"}
+                    label={stageVisual.kind === "image" ? "Presenting" : connected ? "In call" : "Standby"}
+                    title="AI Assistant"
+                  >
+                    {stageVisual.kind === "image" ? (
+                      <div className="flex h-full items-center justify-center bg-[#1b1d21] p-3">
+                        <img
+                          alt="AI presentation preview"
+                          className="max-h-full max-w-full rounded-lg object-contain"
+                          src={stageVisual.imageUrl}
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex h-full items-center justify-center bg-[#181a1f]">
+                        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#2a2d33] text-2xl text-white/80">
+                          G
+                        </div>
+                      </div>
+                    )}
+                  </ParticipantTile>
+                  <ParticipantTile
+                    active={cameraEnabled}
+                    label="You"
+                    title={cameraEnabled ? "Camera on" : "Camera off"}
+                  >
+                    {cameraEnabled && userPreviewStream ? (
+                      <LocalVideoPreview stream={userPreviewStream} />
+                    ) : (
+                      <div className="flex h-full items-center justify-center bg-[#181a1f] text-sm text-white/50">
+                        Camera off
+                      </div>
+                    )}
+                  </ParticipantTile>
+                </aside>
+              </div>
+
+              {cameraEnabled ? (
+                <div className="absolute bottom-24 right-4 z-20 w-[148px] md:bottom-28 md:right-6 md:w-[184px] lg:hidden">
                   <LocalPreviewTile
                     permissionState={permissions.camera}
                     stream={userPreviewStream}
                   />
-                ) : null}
-              </div>
+                </div>
+              ) : null}
 
               {activeCaption ? (
-                <div className="pointer-events-none absolute bottom-40 left-1/2 z-20 w-[min(92vw,820px)] -translate-x-1/2 px-3 md:bottom-44">
-                  <div className="mx-auto rounded-2xl border border-white/10 bg-black/68 px-4 py-3 text-center text-base leading-7 text-white shadow-xl backdrop-blur md:text-lg">
+                <div className="pointer-events-none absolute bottom-36 left-1/2 z-20 w-[min(92vw,760px)] -translate-x-1/2 px-3 md:bottom-40">
+                  <div className="mx-auto rounded-2xl bg-[rgba(0,0,0,0.72)] px-4 py-3 text-center text-base leading-7 text-white shadow-none md:text-lg">
                     <span className="font-medium text-white/80">AI Assistant:</span>{" "}
                     {activeCaption}
                   </div>
@@ -306,13 +356,14 @@ export function LiveChat() {
               ) : null}
             </div>
 
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-64 bg-[linear-gradient(180deg,rgba(11,13,18,0),rgba(11,13,18,0.82)_45%,rgba(11,13,18,0.98))]" />
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-56 bg-[linear-gradient(180deg,rgba(17,19,23,0),rgba(17,19,23,0.88)_42%,#111317_100%)]" />
 
             <div className="absolute inset-x-0 bottom-0 z-20 p-3 md:p-5">
-              <div className="mx-auto flex w-full max-w-[1040px] flex-col gap-3">
-                <Suggestions>
+              <div className="mx-auto flex w-full max-w-[980px] flex-col gap-3">
+                <Suggestions className="justify-center">
                   {SUGGESTIONS.map((suggestion) => (
                     <Suggestion
+                      className="border-white/10 bg-[#1a1c20] text-white/78 shadow-none hover:bg-[#202329]"
                       disabled={!connected}
                       key={suggestion}
                       onClick={sendSuggestion}
@@ -321,10 +372,10 @@ export function LiveChat() {
                   ))}
                 </Suggestions>
 
-                <div className="rounded-[28px] border border-white/10 bg-black/55 p-3 shadow-2xl backdrop-blur-xl md:p-4">
-                  <div className="flex flex-wrap items-center gap-2">
+                <div className="rounded-[22px] border border-white/10 bg-[#15171b] p-3 shadow-none md:p-4">
+                  <div className="flex flex-wrap items-center justify-center gap-2">
                     <Button
-                      className="rounded-full"
+                      className="rounded-full border-0 bg-[#2f8099] text-white shadow-none hover:bg-[#3b90ab]"
                       disabled={connectionBusy || connected}
                       onClick={connect}
                       type="button"
@@ -333,7 +384,7 @@ export function LiveChat() {
                       Connect
                     </Button>
                     <Button
-                      className="rounded-full"
+                      className="rounded-full border-white/10 bg-[#0f1114] text-white shadow-none hover:bg-[#17191d]"
                       disabled={connectionBusy || !connected}
                       onClick={disconnect}
                       type="button"
@@ -343,7 +394,7 @@ export function LiveChat() {
                       Disconnect
                     </Button>
                     <Button
-                      className="rounded-full"
+                      className="rounded-full border-0 shadow-none"
                       disabled={!connected}
                       onClick={toggleMicrophone}
                       type="button"
@@ -357,7 +408,7 @@ export function LiveChat() {
                       {microphoneEnabled ? "Mic on" : "Mic off"}
                     </Button>
                     <Button
-                      className="rounded-full"
+                      className="rounded-full border-0 shadow-none"
                       disabled={!connected}
                       onClick={() => void toggleCamera()}
                       type="button"
@@ -371,7 +422,7 @@ export function LiveChat() {
                       {cameraEnabled ? "Camera on" : "Camera off"}
                     </Button>
                     <Button
-                      className="rounded-full"
+                      className="rounded-full border-white/10 bg-[#0f1114] text-white shadow-none hover:bg-[#17191d]"
                       disabled={!connected}
                       onClick={() =>
                         switchMode(
@@ -385,7 +436,7 @@ export function LiveChat() {
                       {inputMode === "continuous" ? "Continuous" : "Push to talk"}
                     </Button>
                     <Button
-                      className="rounded-full"
+                      className="rounded-full border-white/10 bg-[#0f1114] text-white shadow-none hover:bg-[#17191d]"
                       disabled={!connected || inputMode !== "push-to-talk"}
                       onMouseDown={() => handlePushToTalk(true)}
                       onMouseLeave={() => handlePushToTalk(false)}
@@ -399,39 +450,6 @@ export function LiveChat() {
                       {pushToTalkActive ? "Listening now" : "Hold to talk"}
                     </Button>
                   </div>
-
-                  <PromptInput
-                    className="mt-3 rounded-[24px] border border-white/10 bg-white/5"
-                    onError={() => undefined}
-                    onSubmit={(message) => void sendPrompt(message)}
-                  >
-                    <PromptInputBody>
-                      <PromptInputTextarea
-                        className="text-white placeholder:text-white/45"
-                        onChange={(event) => setDraft(event.target.value)}
-                        placeholder={
-                          connected
-                            ? "Send a text prompt into the live call"
-                            : "Connect first to send a prompt"
-                        }
-                        value={draft}
-                      />
-                    </PromptInputBody>
-                    <PromptInputFooter>
-                      <PromptInputTools>
-                        <Badge className="rounded-full bg-white/10 px-3 py-1 text-white/80 hover:bg-white/10">
-                          Mic {permissionLabel(permissions.microphone)}
-                        </Badge>
-                        <Badge className="rounded-full bg-white/10 px-3 py-1 text-white/80 hover:bg-white/10">
-                          Camera {permissionLabel(permissions.camera)}
-                        </Badge>
-                      </PromptInputTools>
-                      <PromptInputSubmit
-                        disabled={!connected || !draft.trim()}
-                        status={submitStatus}
-                      />
-                    </PromptInputFooter>
-                  </PromptInput>
                 </div>
               </div>
             </div>
@@ -439,8 +457,8 @@ export function LiveChat() {
 
           <div
             className={cn(
-              "absolute inset-y-0 right-0 z-30 flex w-full max-w-[390px] min-w-0 flex-col border-l border-white/10 bg-[#0d1016]/95 shadow-2xl backdrop-blur-2xl transition-transform duration-300 ease-out md:w-[390px]",
-              historyDrawerOpen ? "translate-x-0" : "translate-x-full",
+              "absolute inset-y-0 right-0 z-30 flex w-full max-w-[390px] min-w-0 flex-col border-l border-white/10 bg-[#111317] shadow-[0_0_0_1px_rgba(255,255,255,0.02)] transition-transform duration-300 ease-out md:static md:z-0 md:w-[390px] md:max-w-[390px] md:shrink-0",
+              historyDrawerOpen ? "translate-x-0" : "translate-x-full md:w-0 md:max-w-0 md:translate-x-0 md:border-l-0 md:opacity-0",
             )}
           >
             <div className="flex items-center justify-between border-b border-white/10 px-4 py-4">
@@ -451,7 +469,7 @@ export function LiveChat() {
                 </p>
               </div>
               <Button
-                className="rounded-full border-white/15 bg-white/10 text-white hover:bg-white/15"
+                className="rounded-full border-white/10 bg-[#202329] text-white hover:bg-[#2a2d33]"
                 onClick={() => setHistoryDrawerOpen(false)}
                 type="button"
                 variant="outline"
@@ -548,6 +566,41 @@ export function LiveChat() {
                 )}
               </div>
             </ScrollArea>
+
+            <div className="border-t border-white/10 p-4">
+              <PromptInput
+                className="rounded-[18px] border border-white/10 bg-[#101216] shadow-none"
+                onError={() => undefined}
+                onSubmit={(message) => void sendPrompt(message)}
+              >
+                <PromptInputBody>
+                  <PromptInputTextarea
+                    className="text-white placeholder:text-white/45"
+                    onChange={(event) => setDraft(event.target.value)}
+                    placeholder={
+                      connected
+                        ? "Send a text prompt into the live call"
+                        : "Connect first to send a prompt"
+                    }
+                    value={draft}
+                  />
+                </PromptInputBody>
+                <PromptInputFooter>
+                  <PromptInputTools>
+                    <Badge className="rounded-full border border-white/10 bg-[#1c1f24] px-3 py-1 text-white/70 hover:bg-[#1c1f24]">
+                      Mic {permissionLabel(permissions.microphone)}
+                    </Badge>
+                    <Badge className="rounded-full border border-white/10 bg-[#1c1f24] px-3 py-1 text-white/70 hover:bg-[#1c1f24]">
+                      Camera {permissionLabel(permissions.camera)}
+                    </Badge>
+                  </PromptInputTools>
+                  <PromptInputSubmit
+                    disabled={!connected || !draft.trim()}
+                    status={submitStatus}
+                  />
+                </PromptInputFooter>
+              </PromptInput>
+            </div>
           </div>
 
           {historyDrawerOpen ? (
@@ -574,32 +627,56 @@ function AiIdleStage({
   title: string;
 }) {
   return (
-    <div className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-[28px] border border-white/10 bg-[radial-gradient(circle_at_top,rgba(120,166,255,0.22),transparent_28%),linear-gradient(160deg,#131722_0%,#0b0d12_45%,#06070a_100%)] shadow-2xl">
+    <div className="relative flex h-full min-w-0 flex-1 items-center justify-center overflow-hidden rounded-[20px] border border-white/10 bg-[#17191d]">
       <div className="absolute inset-0">
-        <div className="absolute left-[8%] top-[14%] size-48 rounded-full bg-sky-400/18 blur-3xl animate-pulse" />
-        <div className="absolute right-[10%] top-[18%] size-56 rounded-full bg-amber-300/14 blur-3xl animate-pulse [animation-delay:800ms]" />
-        <div className="absolute bottom-[10%] left-1/2 size-72 -translate-x-1/2 rounded-full bg-blue-500/12 blur-3xl animate-pulse [animation-delay:1400ms]" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),transparent_22%),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(0deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:auto,28px_28px,28px_28px]" />
       </div>
 
       <div className="relative mx-auto flex max-w-2xl flex-col items-center gap-6 px-6 text-center">
-        <div className="flex h-28 w-28 items-center justify-center rounded-full border border-white/12 bg-white/6 shadow-[0_0_80px_rgba(90,145,255,0.18)]">
-          <div className="relative flex h-16 w-16 items-center justify-center">
+        <div className="flex h-24 w-24 items-center justify-center rounded-full bg-[#22252a]">
+          <div className="relative flex h-14 w-14 items-center justify-center">
             <div className="absolute inset-0 rounded-full border border-white/10" />
-            <div className="absolute inset-2 rounded-full border border-white/12" />
-            <div className="h-6 w-6 rounded-full bg-white shadow-[0_0_40px_rgba(255,255,255,0.65)]" />
+            <div className="h-4 w-4 rounded-full bg-white/90" />
           </div>
         </div>
         <div className="space-y-3">
-          <Badge className="rounded-full bg-white/10 px-3 py-1 text-white/75 hover:bg-white/10">
+          <Badge className="rounded-full border border-white/10 bg-[#22252a] px-3 py-1 text-white/70 hover:bg-[#22252a]">
             {connected ? "In call" : "Standby"}
           </Badge>
-          <h2 className="text-3xl font-semibold tracking-tight text-white md:text-5xl">
+          <h2 className="text-3xl font-medium tracking-tight text-white md:text-5xl">
             {title}
           </h2>
           <p className="mx-auto max-w-xl text-sm leading-7 text-white/65 md:text-base">
             {subtitle}
           </p>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function ParticipantTile({
+  active,
+  children,
+  label,
+  title,
+}: {
+  active: boolean;
+  children: ReactNode;
+  label: string;
+  title: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "overflow-hidden rounded-[18px] border bg-[#17191d]",
+        active ? "border-[#7baaf7]" : "border-white/10",
+      )}
+    >
+      <div className="aspect-[4/3] overflow-hidden bg-[#1a1c20]">{children}</div>
+      <div className="flex items-center justify-between px-3 py-2 text-sm text-white">
+        <span>{label}</span>
+        <span className="text-xs text-white/50">{title}</span>
       </div>
     </div>
   );
@@ -613,12 +690,12 @@ function LocalPreviewTile({
   stream: MediaStream | null;
 }) {
   return (
-    <div className="overflow-hidden rounded-[24px] border border-white/15 bg-black/65 shadow-2xl backdrop-blur-xl">
+    <div className="overflow-hidden rounded-[18px] border border-[#7baaf7] bg-[#17191d] shadow-none">
       <div className="aspect-[4/5] overflow-hidden bg-black">
         {stream ? (
           <LocalVideoPreview stream={stream} />
         ) : (
-          <div className="flex h-full items-center justify-center bg-[linear-gradient(180deg,#161a22,#090b0f)] px-4 text-center text-sm text-white/55">
+          <div className="flex h-full items-center justify-center bg-[#181a1f] px-4 text-center text-sm text-white/55">
             {permissionState === "denied"
               ? "Camera access denied"
               : "Starting local camera preview"}
@@ -627,7 +704,7 @@ function LocalPreviewTile({
       </div>
       <div className="flex items-center justify-between px-3 py-2 text-sm text-white">
         <span>You</span>
-        <span className="text-xs text-white/55">Local preview</span>
+        <span className="text-xs text-white/55">Camera</span>
       </div>
     </div>
   );

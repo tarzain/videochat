@@ -9,6 +9,7 @@ import {
 
 import type {
   CameraSnapshotPayload,
+  GenerateImageResult,
   LivePermissionsState,
   LiveSessionStatus,
   TokenRouteResponse,
@@ -28,6 +29,8 @@ interface LiveClientHandlers {
 
 const INPUT_SAMPLE_RATE = 16_000;
 const VIDEO_FRAME_INTERVAL_MS = 900;
+const TOOL_SNAPSHOT_MAX_DIMENSION = 1024;
+const TOOL_SNAPSHOT_JPEG_QUALITY = 0.58;
 
 function createTranscriptEntry(
   role: TranscriptEntry["role"],
@@ -64,6 +67,34 @@ function uint8ArrayToBase64(bytes: Uint8Array): string {
   }
 
   return btoa(binary);
+}
+
+function isGenerateImageResult(result: unknown): result is GenerateImageResult {
+  if (!result || typeof result !== "object") {
+    return false;
+  }
+
+  return (
+    "imageUrl" in result &&
+    typeof (result as { imageUrl?: unknown }).imageUrl === "string"
+  );
+}
+
+function sanitizeToolResultForModel(
+  toolName: string,
+  result: unknown,
+): unknown {
+  if (toolName !== "generate_image" || !isGenerateImageResult(result)) {
+    return result;
+  }
+
+  return {
+    status: "completed",
+    prompt: result.prompt,
+    usedCameraImage: result.usedCameraImage,
+    seed: result.seed,
+    imageReady: true,
+  };
 }
 
 async function blobToInlineData(blob: Blob): Promise<{ mimeType: string; data: string }> {
@@ -384,19 +415,28 @@ export class GeminiLiveClient {
         ),
       );
 
-      const response = await fetch("/api/live/tool", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(request),
-      });
+      const payload =
+        name === "generate_image"
+          ? await this.executeGenerateImageTool(request)
+          : await (async () => {
+              const response = await fetch("/api/live/tool", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify(request),
+              });
 
-      const payload = (await response.json()) as ToolCallResponse;
+              return (await response.json()) as ToolCallResponse;
+            })();
       const functionResponse: FunctionResponse = {
         id: payload.callId,
         name: payload.name,
-        response: payload.error ? { error: payload.error } : { output: payload.result },
+        response: payload.error
+          ? { error: payload.error }
+          : {
+              output: sanitizeToolResultForModel(payload.name, payload.result),
+            },
       };
 
       responses.push(functionResponse);
@@ -414,14 +454,9 @@ export class GeminiLiveClient {
             input: request.args,
             output: payload.error ? undefined : payload.result,
             errorText: payload.error,
-            imageUrl:
-              payload.name === "generate_image" &&
-              payload.result &&
-              typeof payload.result === "object" &&
-              "imageUrl" in payload.result &&
-              typeof payload.result.imageUrl === "string"
-                ? payload.result.imageUrl
-                : undefined,
+            imageUrl: isGenerateImageResult(payload.result)
+              ? payload.result.imageUrl
+              : undefined,
           },
         ),
       );
@@ -430,6 +465,131 @@ export class GeminiLiveClient {
     this.session.sendToolResponse({
       functionResponses: responses,
     });
+  }
+
+  private async executeGenerateImageTool(
+    request: ToolCallRequest,
+  ): Promise<ToolCallResponse> {
+    const response = await fetch("/api/live/tool/generate-image/stream", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(request),
+    });
+
+    if (!response.body) {
+      const payload = (await response.json().catch(() => null)) as
+        | { error?: string }
+        | null;
+
+      return {
+        name: request.name,
+        callId: request.callId,
+        result: null,
+        error: payload?.error ?? "Image generation did not return a stream.",
+      };
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let finalPayload: ToolCallResponse | null = null;
+    let streamError: string | null = null;
+
+    while (true) {
+      const { done, value } = await reader.read();
+
+      if (done) {
+        break;
+      }
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() ?? "";
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+
+        if (!trimmed) {
+          continue;
+        }
+
+        const event = JSON.parse(trimmed) as {
+          type?: string;
+          name?: string;
+          callId?: string;
+          message?: string;
+          error?: string;
+          imageUrl?: string;
+          result?: unknown;
+        };
+
+        if (event.type === "started" || event.type === "progress") {
+          this.handlers.onTranscriptEntry(
+            createTranscriptEntry(
+              "system",
+              "status",
+              event.message ?? "Image generation in progress.",
+            ),
+          );
+          continue;
+        }
+
+        if (event.type === "preview" && typeof event.imageUrl === "string") {
+          this.handlers.onTranscriptEntry(
+            createTranscriptEntry(
+              "tool",
+              "tool-result",
+              `${request.name} preview ready`,
+              {
+                name: request.name,
+                state: "output-available",
+                input: request.args,
+                output: {
+                  status: "preview",
+                },
+                imageUrl: event.imageUrl,
+              },
+            ),
+          );
+          continue;
+        }
+
+        if (event.type === "error") {
+          streamError = event.error ?? "Image generation failed unexpectedly.";
+          continue;
+        }
+
+        if (event.type === "completed") {
+          finalPayload = {
+            name: event.name ?? request.name,
+            callId: event.callId ?? request.callId,
+            result: event.result ?? null,
+          };
+        }
+      }
+    }
+
+    if (streamError) {
+      return {
+        name: request.name,
+        callId: request.callId,
+        result: null,
+        error: streamError,
+      };
+    }
+
+    if (finalPayload) {
+      return finalPayload;
+    }
+
+    return {
+      name: request.name,
+      callId: request.callId,
+      result: null,
+      error: "Image generation stream ended without a result.",
+    };
   }
 
   private shouldSendAudio(): boolean {
@@ -583,20 +743,27 @@ export class GeminiLiveClient {
       return undefined;
     }
 
-    const width = this.videoElement.videoWidth;
-    const height = this.videoElement.videoHeight;
+    const sourceWidth = this.videoElement.videoWidth;
+    const sourceHeight = this.videoElement.videoHeight;
     const context = this.videoCanvas.getContext("2d");
 
-    if (!width || !height || !context) {
+    if (!sourceWidth || !sourceHeight || !context) {
       return undefined;
     }
+
+    const scale = Math.min(
+      1,
+      TOOL_SNAPSHOT_MAX_DIMENSION / Math.max(sourceWidth, sourceHeight),
+    );
+    const width = Math.max(1, Math.round(sourceWidth * scale));
+    const height = Math.max(1, Math.round(sourceHeight * scale));
 
     this.videoCanvas.width = width;
     this.videoCanvas.height = height;
     context.drawImage(this.videoElement, 0, 0, width, height);
 
     const blob = await new Promise<Blob | null>((resolve) => {
-      this.videoCanvas?.toBlob(resolve, "image/jpeg", 0.86);
+      this.videoCanvas?.toBlob(resolve, "image/jpeg", TOOL_SNAPSHOT_JPEG_QUALITY);
     });
 
     if (!blob) {

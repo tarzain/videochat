@@ -332,15 +332,17 @@ export class GeminiLiveClient {
     }
 
     this.handlers.onTranscriptEntry(createTranscriptEntry("user", "text", trimmed));
-    this.session.sendClientContent({
-      turns: [
-        {
-          role: "user",
-          parts: [{ text: trimmed }],
-        },
-      ],
-      turnComplete: true,
-    });
+
+    try {
+      this.session.sendRealtimeInput({
+        text: trimmed,
+      });
+    } catch (error) {
+      const detail =
+        error instanceof Error ? error.message : "Failed to send realtime text input.";
+      this.handlers.onTranscriptEntry(createTranscriptEntry("system", "error", detail));
+      throw error;
+    }
   }
 
   async destroy(): Promise<void> {

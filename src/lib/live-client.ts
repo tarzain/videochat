@@ -11,6 +11,7 @@ import type {
   LivePermissionsState,
   LiveSessionStatus,
   TokenRouteResponse,
+  TranscriptToolData,
   ToolCallRequest,
   ToolCallResponse,
   TranscriptEntry,
@@ -31,6 +32,7 @@ function createTranscriptEntry(
   role: TranscriptEntry["role"],
   kind: TranscriptEntry["kind"],
   text: string,
+  tool?: TranscriptToolData,
 ): TranscriptEntry {
   return {
     id: crypto.randomUUID(),
@@ -38,6 +40,7 @@ function createTranscriptEntry(
     kind,
     text,
     timestamp: new Date().toISOString(),
+    tool,
   };
 }
 
@@ -367,6 +370,11 @@ export class GeminiLiveClient {
           "tool",
           "tool-call",
           `${request.name}(${JSON.stringify(request.args)})`,
+          {
+            name: request.name,
+            state: "input-available",
+            input: request.args,
+          },
         ),
       );
 
@@ -394,6 +402,13 @@ export class GeminiLiveClient {
           payload.error
             ? `${payload.name} failed: ${payload.error}`
             : `${payload.name} -> ${JSON.stringify(payload.result)}`,
+          {
+            name: payload.name,
+            state: payload.error ? "output-error" : "output-available",
+            input: request.args,
+            output: payload.error ? undefined : payload.result,
+            errorText: payload.error,
+          },
         ),
       );
     }

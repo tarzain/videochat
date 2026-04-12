@@ -14,12 +14,26 @@ export type TranscriptEntryKind =
   | "status"
   | "error";
 
+export type TranscriptToolState =
+  | "input-available"
+  | "output-available"
+  | "output-error";
+
+export interface TranscriptToolData {
+  name: string;
+  state: TranscriptToolState;
+  input?: unknown;
+  output?: unknown;
+  errorText?: string;
+}
+
 export interface TranscriptEntry {
   id: string;
   role: TranscriptRole;
   kind: TranscriptEntryKind;
   text: string;
   timestamp: string;
+  tool?: TranscriptToolData;
 }
 
 export interface ToolCallRequest {

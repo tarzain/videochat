@@ -223,6 +223,9 @@ export function LiveChat() {
                   <h1 className="truncate text-2xl font-medium text-white md:text-[2rem]">
                     AI Assistant
                   </h1>
+                  {statusDetail ? (
+                    <p className="text-sm text-white/55">{statusDetail}</p>
+                  ) : null}
                 </div>
               </div>
 
@@ -259,7 +262,11 @@ export function LiveChat() {
                       <ImageIcon className="size-4" />
                       {stageVisual.isPreview ? "AI preview" : "AI presenting"}
                     </div>
-                    <div className="hidden text-sm text-white/55 md:block">{statusDetail}</div>
+                    {statusDetail ? (
+                      <div className="hidden text-sm text-white/55 md:block">
+                        {statusDetail}
+                      </div>
+                    ) : null}
                   </div>
                   <div className="flex min-h-0 flex-1 items-center justify-center bg-[#16181c] p-4 md:p-8">
                     <img
@@ -451,7 +458,7 @@ export function LiveChat() {
                     if (entry.tool) {
                       return (
                         <div
-                          className="w-full max-w-full min-w-0 overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] p-3"
+                          className="w-full max-w-full min-w-0 overflow-hidden border border-white/10 bg-white/[0.03] p-3"
                           key={entry.id}
                         >
                           <div className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-white/50">
@@ -502,12 +509,12 @@ export function LiveChat() {
                     return (
                       <div
                         className={cn(
-                          "w-full max-w-full min-w-0 overflow-hidden rounded-3xl border p-3",
+                          "w-full max-w-full min-w-0 overflow-hidden p-3",
                           entry.role === "model"
-                            ? "border-white/10 bg-white/[0.06]"
+                            ? "border-transparent bg-transparent"
                             : entry.role === "user"
-                              ? "border-sky-400/15 bg-sky-400/[0.08]"
-                              : "border-white/8 bg-white/[0.03]",
+                              ? "rounded-3xl border border-sky-400/15 bg-sky-400/[0.08]"
+                              : "border-transparent bg-transparent",
                         )}
                         key={entry.id}
                       >
@@ -800,7 +807,7 @@ function detailForStatus(status: LiveSessionStatus): string {
     case "connecting":
       return "Requesting an ephemeral token and opening the Gemini Live session.";
     case "connected":
-      return "Session live. Audio output is unlocked and the AI can present generated visuals.";
+      return "";
     case "disconnecting":
       return "Closing the live socket and tearing down local media tracks.";
     case "error":

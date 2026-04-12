@@ -268,7 +268,7 @@ export class GeminiLiveClient {
           onopen: () => {
             this.handlers.onStatusChange("connected");
             this.handlers.onTranscriptEntry(
-              createTranscriptEntry("system", "status", `Connected to ${clientConfig.model}.`),
+              createTranscriptEntry("system", "status", "Connected to vidi."),
             );
           },
           onmessage: (message) => {
@@ -299,13 +299,13 @@ export class GeminiLiveClient {
       await this.cleanup(true);
       this.handlers.onStatusChange(
         "error",
-        error instanceof Error ? error.message : "Failed to connect to Gemini Live.",
+        error instanceof Error ? error.message : "Failed to connect to vidi.",
       );
       this.handlers.onTranscriptEntry(
         createTranscriptEntry(
           "system",
           "error",
-          error instanceof Error ? error.message : "Failed to connect to Gemini Live.",
+          error instanceof Error ? error.message : "Failed to connect to vidi.",
         ),
       );
     }

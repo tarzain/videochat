@@ -138,7 +138,7 @@ export function LiveChat() {
         kind: "image",
         imageUrl: latestImageEntry.tool.imageUrl,
         isPreview: outputStatus,
-        title: outputStatus ? "AI Assistant is presenting" : "AI Assistant presented",
+        title: outputStatus ? "vidi is presenting" : "vidi presented",
         subtitle: outputStatus
           ? "Flux preview image"
           : "Latest generated image on stage",
@@ -155,7 +155,7 @@ export function LiveChat() {
 
     return {
       kind: "idle",
-      title: connected ? "AI Assistant is live" : "AI Assistant camera is off",
+      title: connected ? "vidi is live" : "vidi camera is off",
       subtitle: imageStatusEntry?.text ?? "Waiting to speak or present something visual.",
     };
   }, [connected, transcript]);
@@ -245,8 +245,8 @@ export function LiveChat() {
           >
             <header className="absolute inset-x-0 top-0 z-20 flex items-start justify-between gap-4 px-4 py-4 md:px-6 md:py-5">
               <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#2b2d31] text-lg font-semibold text-white">
-                  G
+                <div className="text-[1.65rem] font-medium tracking-tight text-white">
+                  vidi
                 </div>
               </div>
 
@@ -271,12 +271,12 @@ export function LiveChat() {
                   <div className="relative z-10 flex items-center justify-start px-4 py-4 md:px-5">
                     <div className="flex items-center gap-2 rounded-full bg-black/40 px-3 py-1.5 text-sm text-white">
                       <ImageIcon className="size-4" />
-                      {stageVisual.isPreview ? "AI preview" : "AI presenting"}
+                      {stageVisual.isPreview ? "vidi preview" : "vidi presenting"}
                     </div>
                   </div>
                   <div className="flex min-h-0 flex-1 items-center justify-center bg-[#16181c] p-4 md:p-8">
                     <img
-                      alt="AI presentation"
+                      alt="vidi presentation"
                       className="h-full max-h-full w-full max-w-full rounded-[12px] object-contain"
                       src={stageVisual.imageUrl}
                     />
@@ -294,20 +294,20 @@ export function LiveChat() {
                   <ParticipantTile
                     active={stageVisual.kind === "image"}
                     label={stageVisual.kind === "image" ? "Presenting" : connected ? "In call" : "Standby"}
-                    title="AI Assistant"
+                    title="vidi"
                   >
                     {stageVisual.kind === "image" ? (
                       <div className="flex h-full min-h-0 items-center justify-center bg-[#1b1d21] p-3">
                         <img
-                          alt="AI presentation preview"
+                          alt="vidi presentation preview"
                           className="h-full max-h-full w-full max-w-full rounded-lg object-contain"
                           src={stageVisual.imageUrl}
                         />
                       </div>
                     ) : (
                       <div className="flex h-full items-center justify-center bg-[#181a1f]">
-                        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#2a2d33] text-2xl text-white/80">
-                          G
+                        <div className="text-xl font-medium tracking-tight text-white/80">
+                          vidi
                         </div>
                       </div>
                     )}
@@ -340,7 +340,7 @@ export function LiveChat() {
               {activeCaption ? (
                 <div className="pointer-events-none absolute bottom-36 left-1/2 z-20 w-[min(92vw,760px)] -translate-x-1/2 px-3 md:bottom-40">
                   <div className="mx-auto rounded-2xl bg-[rgba(0,0,0,0.72)] px-4 py-3 text-center text-base leading-7 text-white shadow-none md:text-lg">
-                    <span className="font-medium text-white/80">AI Assistant:</span>{" "}
+                    <span className="font-medium text-white/80">vidi:</span>{" "}
                     {activeCaption}
                   </div>
                 </div>
@@ -530,9 +530,6 @@ export function LiveChat() {
                         )}
                         key={entry.id}
                       >
-                        <div className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-white/50">
-                          {entry.role}
-                        </div>
                         <div className="max-w-full break-words text-sm leading-6 text-white/86">
                           {entry.text}
                         </div>
@@ -871,7 +868,11 @@ function groupTranscriptEntries(entries: TranscriptEntry[]): TranscriptEntry[] {
   const grouped: TranscriptEntry[] = [];
 
   for (const entry of entries) {
-    if (isPreviewToolEntry(entry) || isImageGenerationStatusEntry(entry)) {
+    if (
+      entry.role === "system" ||
+      isPreviewToolEntry(entry) ||
+      isImageGenerationStatusEntry(entry)
+    ) {
       continue;
     }
 

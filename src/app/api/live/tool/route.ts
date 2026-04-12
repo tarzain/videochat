@@ -45,11 +45,16 @@ function getTimeResult(args: unknown) {
 async function getGenerateImageResult(request: ToolCallRequest) {
   const parsedArgs =
     request.args && typeof request.args === "object"
-      ? (request.args as { contents?: unknown; useCurrentCameraImage?: unknown })
+      ? (request.args as {
+          contents?: unknown;
+          useCurrentCameraImage?: unknown;
+          applyStylePrefix?: unknown;
+        })
       : {};
   const contents =
     typeof parsedArgs.contents === "string" ? parsedArgs.contents.trim() : "";
   const useCurrentCameraImage = parsedArgs.useCurrentCameraImage === true;
+  const applyStylePrefix = parsedArgs.applyStylePrefix !== false;
 
   if (!contents) {
     throw new Error("generate_image requires a non-empty `contents` string.");
@@ -65,6 +70,7 @@ async function getGenerateImageResult(request: ToolCallRequest) {
     contents,
     cameraSnapshot: request.cameraSnapshot,
     useCurrentCameraImage,
+    applyStylePrefix,
   });
 }
 

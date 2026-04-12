@@ -29,6 +29,7 @@ export interface GenerateImageResult {
   prompt: string;
   seed?: number;
   usedCameraImage: boolean;
+  usedStylePrefix: boolean;
 }
 
 export interface TranscriptToolData {

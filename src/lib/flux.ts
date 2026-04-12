@@ -75,9 +75,13 @@ function createFluxInput(params: {
   contents: string;
   cameraSnapshot?: CameraSnapshotPayload;
   useCurrentCameraImage?: boolean;
+  applyStylePrefix?: boolean;
 }) {
   return async () => {
-    const prompt = `${FLUX_STYLE_PREFIX}${params.contents.trim()}`;
+    const applyStylePrefix = params.applyStylePrefix !== false;
+    const prompt = applyStylePrefix
+      ? `${FLUX_STYLE_PREFIX}${params.contents.trim()}`
+      : params.contents.trim();
     const referenceImageUrl =
       params.useCurrentCameraImage && params.cameraSnapshot
         ? await uploadCameraSnapshot(params.cameraSnapshot)
@@ -101,6 +105,7 @@ function createFluxInput(params: {
         ...(referenceImageUrl ? { image_urls: [referenceImageUrl] } : {}),
       },
       usedCameraImage: Boolean(referenceImageUrl),
+      usedStylePrefix: applyStylePrefix,
     };
   };
 }
@@ -179,19 +184,23 @@ export async function streamFluxImage(
     contents: string;
     cameraSnapshot?: CameraSnapshotPayload;
     useCurrentCameraImage?: boolean;
+    applyStylePrefix?: boolean;
   },
   onEvent: (event: FluxStreamEvent) => Promise<void> | void,
 ): Promise<GenerateImageResult> {
   ensureFalConfigured();
 
   const resolveInput = createFluxInput(params);
-  const { input, prompt, usedCameraImage } = await resolveInput();
+  const { input, prompt, usedCameraImage, usedStylePrefix } =
+    await resolveInput();
 
   await onEvent({
     type: "started",
     message: usedCameraImage
       ? "Starting Flux image generation with the current camera reference."
-      : "Starting Flux image generation.",
+      : usedStylePrefix
+        ? "Starting stylized Flux image generation."
+        : "Starting faithful Flux image generation.",
   });
 
   const stream = await fal.stream(FLUX_ENDPOINT, { input });
@@ -235,6 +244,7 @@ export async function streamFluxImage(
     prompt: output.prompt || prompt,
     seed: output.seed,
     usedCameraImage,
+    usedStylePrefix,
   };
 
   await onEvent({
@@ -249,6 +259,7 @@ export async function generateFluxImage(params: {
   contents: string;
   cameraSnapshot?: CameraSnapshotPayload;
   useCurrentCameraImage?: boolean;
+  applyStylePrefix?: boolean;
 }): Promise<GenerateImageResult> {
   let finalResult: GenerateImageResult | null = null;
 

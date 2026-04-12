@@ -93,6 +93,7 @@ function sanitizeToolResultForModel(
     status: "completed",
     prompt: result.prompt,
     usedCameraImage: result.usedCameraImage,
+    usedStylePrefix: result.usedStylePrefix,
     seed: result.seed,
     imageReady: true,
   };

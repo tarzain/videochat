@@ -4,6 +4,13 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import type { PromptInputMessage } from "@/components/ai-elements/prompt-input";
 import {
+  ChainOfThought,
+  ChainOfThoughtContent,
+  ChainOfThoughtHeader,
+  ChainOfThoughtImage,
+  ChainOfThoughtStep,
+} from "@/components/ai-elements/chain-of-thought";
+import {
   PromptInput,
   PromptInputBody,
   PromptInputFooter,
@@ -32,6 +39,7 @@ import type {
 import type { ChatStatus } from "ai";
 import {
   ImageIcon,
+  MessageSquareIcon,
   MicIcon,
   MicOffIcon,
   PhoneIcon,
@@ -69,7 +77,6 @@ type AiStageVisual =
 export function LiveChat() {
   const clientRef = useRef<GeminiLiveClient | null>(null);
   const [status, setStatus] = useState<LiveSessionStatus>("disconnected");
-  const [statusDetail, setStatusDetail] = useState("Ready to connect.");
   const [permissions, setPermissions] =
     useState<LivePermissionsState>(INITIAL_PERMISSIONS);
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
@@ -83,9 +90,8 @@ export function LiveChat() {
 
   useEffect(() => {
     const client = new GeminiLiveClient({
-      onStatusChange: (nextStatus, detail) => {
+      onStatusChange: (nextStatus) => {
         setStatus(nextStatus);
-        setStatusDetail(detail ?? detailForStatus(nextStatus));
       },
       onTranscriptEntry: (entry) => {
         setTranscript((current) => [...current, entry].slice(-180));
@@ -216,39 +222,18 @@ export function LiveChat() {
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#2b2d31] text-lg font-semibold text-white">
                   G
                 </div>
-                <div className="min-w-0">
-                  <div className="text-[13px] font-medium uppercase tracking-[0.18em] text-white/45">
-                    Gemini Live
-                  </div>
-                  <h1 className="truncate text-2xl font-medium text-white md:text-[2rem]">
-                    AI Assistant
-                  </h1>
-                  {statusDetail ? (
-                    <p className="text-sm text-white/55">{statusDetail}</p>
-                  ) : null}
-                </div>
               </div>
 
               <div className="flex items-center gap-2">
-                <Badge
-                  className={cn(
-                    "rounded-full border border-white/10 px-3 py-1 capitalize text-white shadow-none",
-                    status === "connected"
-                      ? "bg-[#1e3a2d]"
-                      : status === "error"
-                        ? "bg-[#4a2323]"
-                        : "bg-[#2a2d33]",
-                  )}
-                >
-                  {status}
-                </Badge>
                 <Button
-                  className="rounded-full border-white/10 bg-[#2a2d33] text-white shadow-none hover:bg-[#32353b]"
+                  aria-label={historyDrawerOpen ? "Hide history" : "Show history"}
+                  className="h-11 w-11 rounded-full border-white/10 bg-[#2a2d33] p-0 text-white shadow-none hover:bg-[#32353b]"
                   onClick={() => setHistoryDrawerOpen((current) => !current)}
+                  size="icon"
                   type="button"
                   variant="outline"
                 >
-                  {historyDrawerOpen ? "Hide history" : "Show history"}
+                  <MessageSquareIcon className="size-5" />
                 </Button>
               </div>
             </header>
@@ -257,16 +242,11 @@ export function LiveChat() {
               <div className="flex min-h-0 min-w-0 flex-1 gap-4 md:gap-5">
               {stageVisual.kind === "image" ? (
                 <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[20px] border border-white/10 bg-[#1a1c20]">
-                  <div className="relative z-10 flex items-center justify-between px-4 py-4 md:px-5">
+                  <div className="relative z-10 flex items-center justify-start px-4 py-4 md:px-5">
                     <div className="flex items-center gap-2 rounded-full bg-black/40 px-3 py-1.5 text-sm text-white">
                       <ImageIcon className="size-4" />
                       {stageVisual.isPreview ? "AI preview" : "AI presenting"}
                     </div>
-                    {statusDetail ? (
-                      <div className="hidden text-sm text-white/55 md:block">
-                        {statusDetail}
-                      </div>
-                    ) : null}
                   </div>
                   <div className="flex min-h-0 flex-1 items-center justify-center bg-[#16181c] p-4 md:p-8">
                     <img
@@ -456,6 +436,12 @@ export function LiveChat() {
                 ) : (
                   historyEntries.map((entry) => {
                     if (entry.tool) {
+                      if (isGenerateImageChainEntry(entry)) {
+                        return (
+                          <GenerateImageChainEntry entry={entry} key={entry.id} />
+                        );
+                      }
+
                       return (
                         <div
                           className="w-full max-w-full min-w-0 overflow-hidden border border-white/10 bg-white/[0.03] p-3"
@@ -649,6 +635,52 @@ function ParticipantTile({
   );
 }
 
+function GenerateImageChainEntry({ entry }: { entry: TranscriptEntry }) {
+  const prompt = getGenerateImagePrompt(entry.tool?.input);
+  const completed = entry.tool?.state === "output-available";
+
+  return (
+    <div className="w-full max-w-full min-w-0 overflow-hidden p-3">
+      <ChainOfThought className="space-y-3" defaultOpen>
+        <ChainOfThoughtHeader className="text-white/72 hover:text-white">
+          Image generation
+        </ChainOfThoughtHeader>
+        <ChainOfThoughtContent className="space-y-3">
+          <ChainOfThoughtStep
+            className="text-white/82"
+            description={prompt ?? undefined}
+            icon={ImageIcon}
+            label={completed ? "Generated image from prompt" : "Generating image"}
+            status={completed ? "complete" : "active"}
+          />
+          {entry.tool?.imageUrl ? (
+            <ChainOfThoughtStep
+              className="text-white/82"
+              icon={ImageIcon}
+              label="Attached result"
+              status="complete"
+            >
+              <ChainOfThoughtImage
+                caption={prompt ? `Prompt: ${prompt}` : "Final generated image"}
+                className="mt-0"
+              >
+                <img
+                  alt="Generated result"
+                  className="max-h-[18rem] w-full rounded-xl object-contain"
+                  src={entry.tool.imageUrl}
+                />
+              </ChainOfThoughtImage>
+            </ChainOfThoughtStep>
+          ) : null}
+        </ChainOfThoughtContent>
+      </ChainOfThought>
+      <div className="mt-2 text-[11px] text-white/45">
+        {new Date(entry.timestamp).toLocaleTimeString()}
+      </div>
+    </div>
+  );
+}
+
 function LocalPreviewTile({
   permissionState,
   stream,
@@ -728,6 +760,65 @@ function isPreviewToolEntry(entry: TranscriptEntry): boolean {
   );
 }
 
+function isGenerateImageChainEntry(entry: TranscriptEntry): boolean {
+  return (
+    entry.tool?.name === "generate_image" &&
+    entry.tool.state !== "output-error"
+  );
+}
+
+function canMergeGenerateImageEntries(
+  previous: TranscriptEntry,
+  next: TranscriptEntry,
+): boolean {
+  return (
+    previous.kind === "tool-call" &&
+    next.kind === "tool-result" &&
+    previous.role === "tool" &&
+    next.role === "tool" &&
+    previous.tool?.name === "generate_image" &&
+    next.tool?.name === "generate_image"
+  );
+}
+
+function mergeGenerateImageEntries(
+  previous: TranscriptEntry,
+  next: TranscriptEntry,
+): TranscriptEntry {
+  const previousTool = previous.tool!;
+  const nextTool = next.tool!;
+
+  return {
+    ...previous,
+    kind: next.kind,
+    text: next.text || previous.text,
+    timestamp: next.timestamp,
+    tool: {
+      ...previousTool,
+      ...nextTool,
+      name: nextTool.name || previousTool.name,
+      state: nextTool.state || previousTool.state,
+      input: nextTool.input ?? previousTool.input,
+      output: nextTool.output ?? previousTool.output,
+      imageUrl: nextTool.imageUrl ?? previousTool.imageUrl,
+      errorText: nextTool.errorText ?? previousTool.errorText,
+    },
+  };
+}
+
+function getGenerateImagePrompt(input: unknown): string | null {
+  if (!input || typeof input !== "object") {
+    return null;
+  }
+
+  if (!("contents" in input)) {
+    return null;
+  }
+
+  const contents = input.contents;
+  return typeof contents === "string" && contents.trim() ? contents.trim() : null;
+}
+
 function mergeTurnText(previous: string, next: string): string {
   const trimmedPrevious = previous.trim();
   const trimmedNext = next.trim();
@@ -783,6 +874,11 @@ function groupTranscriptEntries(entries: TranscriptEntry[]): TranscriptEntry[] {
 
     const lastEntry = grouped[grouped.length - 1];
 
+    if (lastEntry && canMergeGenerateImageEntries(lastEntry, entry)) {
+      grouped[grouped.length - 1] = mergeGenerateImageEntries(lastEntry, entry);
+      continue;
+    }
+
     if (lastEntry && canMergeTextEntries(lastEntry, entry)) {
       lastEntry.text = mergeTurnText(lastEntry.text, entry.text);
       lastEntry.timestamp = entry.timestamp;
@@ -800,19 +896,4 @@ function groupTranscriptEntries(entries: TranscriptEntry[]): TranscriptEntry[] {
   }
 
   return grouped;
-}
-
-function detailForStatus(status: LiveSessionStatus): string {
-  switch (status) {
-    case "connecting":
-      return "Requesting an ephemeral token and opening the Gemini Live session.";
-    case "connected":
-      return "";
-    case "disconnecting":
-      return "Closing the live socket and tearing down local media tracks.";
-    case "error":
-      return "The last live action failed. Open history for the most recent event.";
-    default:
-      return "Ready to connect.";
-  }
 }

@@ -16,7 +16,6 @@ import {
   PromptInputFooter,
   PromptInputSubmit,
   PromptInputTextarea,
-  PromptInputTools,
 } from "@/components/ai-elements/prompt-input";
 import { Suggestion, Suggestions } from "@/components/ai-elements/suggestion";
 import {
@@ -175,6 +174,19 @@ export function LiveChat() {
     clientRef.current?.setInputMode("continuous");
   };
 
+  const ensureConnected = async () => {
+    if (status === "connected") {
+      return true;
+    }
+
+    if (status === "connecting" || status === "disconnecting") {
+      return false;
+    }
+
+    await connect();
+    return true;
+  };
+
   const disconnect = async () => {
     await clientRef.current?.disconnect();
   };
@@ -187,11 +199,25 @@ export function LiveChat() {
     }
 
     setDraft("");
+    const ready = await ensureConnected();
+
+    if (!ready) {
+      setDraft(trimmed);
+      return;
+    }
+
     await clientRef.current?.sendText(trimmed);
   };
 
   const sendSuggestion = async (suggestion: string) => {
     setDraft("");
+    const ready = await ensureConnected();
+
+    if (!ready) {
+      setDraft(suggestion);
+      return;
+    }
+
     await clientRef.current?.sendText(suggestion);
   };
 
@@ -530,25 +556,13 @@ export function LiveChat() {
                   <PromptInputTextarea
                     className="text-white placeholder:text-white/45"
                     onChange={(event) => setDraft(event.target.value)}
-                    placeholder={
-                      connected
-                        ? "Send a text prompt into the live call"
-                        : "Connect first to send a prompt"
-                    }
+                    placeholder="Send a text prompt into the live call"
                     value={draft}
                   />
                 </PromptInputBody>
-                <PromptInputFooter>
-                  <PromptInputTools>
-                    <Badge className="rounded-full border border-white/10 bg-[#1c1f24] px-3 py-1 text-white/70 hover:bg-[#1c1f24]">
-                      Mic {permissionLabel(permissions.microphone)}
-                    </Badge>
-                    <Badge className="rounded-full border border-white/10 bg-[#1c1f24] px-3 py-1 text-white/70 hover:bg-[#1c1f24]">
-                      Camera {permissionLabel(permissions.camera)}
-                    </Badge>
-                  </PromptInputTools>
+                <PromptInputFooter className="justify-end">
                   <PromptInputSubmit
-                    disabled={!connected || !draft.trim()}
+                    disabled={connectionBusy || !draft.trim()}
                     status={submitStatus}
                   />
                 </PromptInputFooter>
@@ -737,17 +751,6 @@ function LocalVideoPreview({ stream }: { stream: MediaStream }) {
       ref={videoRef}
     />
   );
-}
-
-function permissionLabel(value: LivePermissionsState[keyof LivePermissionsState]) {
-  switch (value) {
-    case "granted":
-      return "granted";
-    case "denied":
-      return "denied";
-    default:
-      return "unknown";
-  }
 }
 
 function isPreviewToolEntry(entry: TranscriptEntry): boolean {

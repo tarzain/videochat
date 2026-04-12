@@ -521,12 +521,12 @@ export function LiveChat() {
                     return (
                       <div
                         className={cn(
-                          "w-full max-w-full min-w-0 overflow-hidden p-3",
+                          "min-w-0 overflow-hidden p-3",
                           entry.role === "model"
-                            ? "border-transparent bg-transparent"
+                            ? "w-full max-w-full border-transparent bg-transparent"
                             : entry.role === "user"
-                              ? "rounded-3xl border border-sky-400/15 bg-sky-400/[0.08]"
-                              : "border-transparent bg-transparent",
+                              ? "ml-auto w-fit max-w-full rounded-3xl border border-sky-400/15 bg-sky-400/[0.08]"
+                              : "w-full max-w-full border-transparent bg-transparent",
                         )}
                         key={entry.id}
                       >

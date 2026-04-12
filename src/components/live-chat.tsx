@@ -222,9 +222,9 @@ export function LiveChat() {
   };
 
   return (
-    <main className="min-h-screen bg-[#202124] text-foreground">
-      <section className="mx-auto flex min-h-screen w-full max-w-[1680px] flex-col p-2 md:p-4">
-        <div className="relative flex min-h-[calc(100vh-1rem)] flex-1 overflow-hidden rounded-[24px] border border-white/10 bg-[#111317] shadow-[0_12px_48px_rgba(0,0,0,0.28)] md:min-h-[calc(100vh-2rem)]">
+    <main className="h-screen overflow-hidden bg-[#202124] text-foreground">
+      <section className="mx-auto flex h-full w-full max-w-[1680px] flex-col overflow-hidden p-2 md:p-4">
+        <div className="relative flex h-full min-h-0 flex-1 overflow-hidden rounded-[24px] border border-white/10 bg-[#111317] shadow-[0_12px_48px_rgba(0,0,0,0.28)]">
           <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0))]" />
 
           <div
@@ -272,21 +272,21 @@ export function LiveChat() {
               </div>
             </header>
 
-            <div className="relative flex min-h-[440px] flex-1 items-stretch overflow-hidden px-3 pb-52 pt-24 md:px-5 md:pb-52 md:pt-24">
-              <div className="flex min-w-0 flex-1 gap-4 md:gap-5">
+            <div className="absolute inset-x-0 top-0 bottom-0 flex items-stretch overflow-hidden px-3 pb-52 pt-24 md:px-5 md:pb-52 md:pt-24">
+              <div className="flex min-h-0 min-w-0 flex-1 gap-4 md:gap-5">
               {stageVisual.kind === "image" ? (
-                <div className="relative min-w-0 flex-1 overflow-hidden rounded-[20px] border border-white/10 bg-[#1a1c20]">
-                  <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between px-4 py-4 md:px-5">
+                <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[20px] border border-white/10 bg-[#1a1c20]">
+                  <div className="relative z-10 flex items-center justify-between px-4 py-4 md:px-5">
                     <div className="flex items-center gap-2 rounded-full bg-black/40 px-3 py-1.5 text-sm text-white">
                       <ImageIcon className="size-4" />
                       {stageVisual.isPreview ? "AI preview" : "AI presenting"}
                     </div>
                     <div className="hidden text-sm text-white/55 md:block">{statusDetail}</div>
                   </div>
-                  <div className="flex h-full w-full items-center justify-center bg-[#16181c] p-4 md:p-8">
+                  <div className="flex min-h-0 flex-1 items-center justify-center bg-[#16181c] p-4 md:p-8">
                     <img
                       alt="AI presentation"
-                      className="max-h-full max-w-full rounded-[12px] object-contain"
+                      className="h-full max-h-full w-full max-w-full rounded-[12px] object-contain"
                       src={stageVisual.imageUrl}
                     />
                   </div>
@@ -299,17 +299,17 @@ export function LiveChat() {
                 />
               )}
 
-                <aside className="hidden w-[220px] shrink-0 flex-col gap-3 lg:flex">
+                <aside className="hidden h-full min-h-0 w-[220px] shrink-0 flex-col gap-3 lg:flex">
                   <ParticipantTile
                     active={stageVisual.kind === "image"}
                     label={stageVisual.kind === "image" ? "Presenting" : connected ? "In call" : "Standby"}
                     title="AI Assistant"
                   >
                     {stageVisual.kind === "image" ? (
-                      <div className="flex h-full items-center justify-center bg-[#1b1d21] p-3">
+                      <div className="flex h-full min-h-0 items-center justify-center bg-[#1b1d21] p-3">
                         <img
                           alt="AI presentation preview"
-                          className="max-h-full max-w-full rounded-lg object-contain"
+                          className="h-full max-h-full w-full max-w-full rounded-lg object-contain"
                           src={stageVisual.imageUrl}
                         />
                       </div>

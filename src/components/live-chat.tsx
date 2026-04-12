@@ -31,14 +31,13 @@ import type {
 } from "@/lib/live-types";
 import type { ChatStatus } from "ai";
 import {
-  AudioLinesIcon,
   ImageIcon,
   MicIcon,
   MicOffIcon,
+  PhoneIcon,
+  PhoneOffIcon,
   VideoIcon,
   VideoOffIcon,
-  WifiIcon,
-  WifiOffIcon,
   XIcon,
 } from "lucide-react";
 
@@ -75,12 +74,8 @@ export function LiveChat() {
     useState<LivePermissionsState>(INITIAL_PERMISSIONS);
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
   const [draft, setDraft] = useState("");
-  const [inputMode, setInputMode] = useState<"continuous" | "push-to-talk">(
-    "continuous",
-  );
   const [microphoneEnabled, setMicrophoneEnabled] = useState(true);
   const [cameraEnabled, setCameraEnabled] = useState(false);
-  const [pushToTalkActive, setPushToTalkActive] = useState(false);
   const [historyDrawerOpen, setHistoryDrawerOpen] = useState(false);
   const [userPreviewStream, setUserPreviewStream] = useState<MediaStream | null>(
     null,
@@ -171,7 +166,7 @@ export function LiveChat() {
 
   const connect = async () => {
     await clientRef.current?.connect();
-    setInputMode(clientRef.current?.getCurrentMode() ?? "continuous");
+    clientRef.current?.setInputMode("continuous");
   };
 
   const disconnect = async () => {
@@ -206,27 +201,10 @@ export function LiveChat() {
     await clientRef.current?.setCameraEnabled(nextValue);
   };
 
-  const switchMode = (nextMode: "continuous" | "push-to-talk") => {
-    setInputMode(nextMode);
-    clientRef.current?.setInputMode(nextMode);
-
-    if (nextMode === "continuous") {
-      setPushToTalkActive(false);
-      clientRef.current?.setPushToTalkActive(false);
-    }
-  };
-
-  const handlePushToTalk = (active: boolean) => {
-    setPushToTalkActive(active);
-    clientRef.current?.setPushToTalkActive(active);
-  };
-
   return (
-    <main className="h-screen overflow-hidden bg-[#202124] text-foreground">
-      <section className="mx-auto flex h-full w-full max-w-[1680px] flex-col overflow-hidden p-2 md:p-4">
-        <div className="relative flex h-full min-h-0 flex-1 overflow-hidden rounded-[24px] border border-white/10 bg-[#111317] shadow-[0_12px_48px_rgba(0,0,0,0.28)]">
-          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0))]" />
-
+    <main className="h-screen overflow-hidden bg-[#111317] text-foreground">
+      <section className="flex h-full w-full flex-col overflow-hidden">
+        <div className="relative flex h-full min-h-0 flex-1 overflow-hidden bg-[#111317]">
           <div
             className={cn(
               "relative flex min-h-full min-w-0 flex-1 flex-col transition-[width] duration-300 ease-out",
@@ -375,79 +353,61 @@ export function LiveChat() {
                 <div className="rounded-[22px] border border-white/10 bg-[#15171b] p-3 shadow-none md:p-4">
                   <div className="flex flex-wrap items-center justify-center gap-2">
                     <Button
-                      className="rounded-full border-0 bg-[#2f8099] text-white shadow-none hover:bg-[#3b90ab]"
-                      disabled={connectionBusy || connected}
-                      onClick={connect}
+                      className={cn(
+                        "h-12 w-12 rounded-full border-0 p-0 text-white shadow-none",
+                        connected
+                          ? "bg-[#c5221f] hover:bg-[#d93025]"
+                          : "bg-[#1a73e8] hover:bg-[#2b7de9]",
+                      )}
+                      disabled={connectionBusy}
+                      onClick={connected ? disconnect : connect}
+                      size="icon"
                       type="button"
+                      aria-label={connected ? "Hang up" : "Start call"}
                     >
-                      <WifiIcon className="size-4" />
-                      Connect
+                      {connected ? (
+                        <PhoneOffIcon className="size-5" />
+                      ) : (
+                        <PhoneIcon className="size-5" />
+                      )}
                     </Button>
                     <Button
-                      className="rounded-full border-white/10 bg-[#0f1114] text-white shadow-none hover:bg-[#17191d]"
-                      disabled={connectionBusy || !connected}
-                      onClick={disconnect}
-                      type="button"
-                      variant="outline"
-                    >
-                      <WifiOffIcon className="size-4" />
-                      Disconnect
-                    </Button>
-                    <Button
-                      className="rounded-full border-0 shadow-none"
+                      className={cn(
+                        "h-12 w-12 rounded-full border-0 p-0 shadow-none",
+                        microphoneEnabled
+                          ? "bg-[#1a73e8] text-white hover:bg-[#2b7de9]"
+                          : "bg-[#2a2d33] text-white hover:bg-[#32353b]",
+                      )}
                       disabled={!connected}
                       onClick={toggleMicrophone}
+                      size="icon"
                       type="button"
-                      variant={microphoneEnabled ? "secondary" : "outline"}
+                      aria-label={microphoneEnabled ? "Mute microphone" : "Unmute microphone"}
                     >
                       {microphoneEnabled ? (
-                        <MicIcon className="size-4" />
+                        <MicIcon className="size-5" />
                       ) : (
-                        <MicOffIcon className="size-4" />
+                        <MicOffIcon className="size-5" />
                       )}
-                      {microphoneEnabled ? "Mic on" : "Mic off"}
                     </Button>
                     <Button
-                      className="rounded-full border-0 shadow-none"
+                      className={cn(
+                        "h-12 w-12 rounded-full border-0 p-0 shadow-none",
+                        cameraEnabled
+                          ? "bg-[#1a73e8] text-white hover:bg-[#2b7de9]"
+                          : "bg-[#2a2d33] text-white hover:bg-[#32353b]",
+                      )}
                       disabled={!connected}
                       onClick={() => void toggleCamera()}
+                      size="icon"
                       type="button"
-                      variant={cameraEnabled ? "secondary" : "outline"}
+                      aria-label={cameraEnabled ? "Turn camera off" : "Turn camera on"}
                     >
                       {cameraEnabled ? (
-                        <VideoIcon className="size-4" />
+                        <VideoIcon className="size-5" />
                       ) : (
-                        <VideoOffIcon className="size-4" />
+                        <VideoOffIcon className="size-5" />
                       )}
-                      {cameraEnabled ? "Camera on" : "Camera off"}
-                    </Button>
-                    <Button
-                      className="rounded-full border-white/10 bg-[#0f1114] text-white shadow-none hover:bg-[#17191d]"
-                      disabled={!connected}
-                      onClick={() =>
-                        switchMode(
-                          inputMode === "continuous" ? "push-to-talk" : "continuous",
-                        )
-                      }
-                      type="button"
-                      variant="outline"
-                    >
-                      <AudioLinesIcon className="size-4" />
-                      {inputMode === "continuous" ? "Continuous" : "Push to talk"}
-                    </Button>
-                    <Button
-                      className="rounded-full border-white/10 bg-[#0f1114] text-white shadow-none hover:bg-[#17191d]"
-                      disabled={!connected || inputMode !== "push-to-talk"}
-                      onMouseDown={() => handlePushToTalk(true)}
-                      onMouseLeave={() => handlePushToTalk(false)}
-                      onMouseUp={() => handlePushToTalk(false)}
-                      onTouchEnd={() => handlePushToTalk(false)}
-                      onTouchStart={() => handlePushToTalk(true)}
-                      type="button"
-                      variant={pushToTalkActive ? "default" : "outline"}
-                    >
-                      <AudioLinesIcon className="size-4" />
-                      {pushToTalkActive ? "Listening now" : "Hold to talk"}
                     </Button>
                   </div>
                 </div>

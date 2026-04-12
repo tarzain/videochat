@@ -234,9 +234,9 @@ export function LiveChat() {
   };
 
   return (
-    <main className="h-screen overflow-hidden bg-[#111317] text-foreground">
+    <main className="h-screen overflow-hidden bg-[var(--call-shell-bg)] text-[var(--call-fg)]">
       <section className="flex h-full w-full flex-col overflow-hidden">
-        <div className="relative flex h-full min-h-0 flex-1 overflow-hidden bg-[#111317]">
+        <div className="relative flex h-full min-h-0 flex-1 overflow-hidden bg-[var(--call-shell-bg)]">
           <div
             className={cn(
               "relative flex min-h-full min-w-0 flex-1 flex-col transition-[width] duration-300 ease-out",
@@ -245,7 +245,7 @@ export function LiveChat() {
           >
             <header className="absolute inset-x-0 top-0 z-20 flex items-start justify-between gap-4 px-4 py-4 md:px-6 md:py-5">
               <div className="flex items-center gap-3">
-                <div className="text-[1.65rem] font-medium tracking-tight text-white">
+                <div className="text-[1.65rem] font-medium tracking-tight text-[var(--call-fg)]">
                   vidi
                 </div>
               </div>
@@ -253,7 +253,7 @@ export function LiveChat() {
               <div className="flex items-center gap-2">
                 <Button
                   aria-label={historyDrawerOpen ? "Hide history" : "Show history"}
-                  className="h-11 w-11 rounded-full border-white/10 bg-[#2a2d33] p-0 text-white shadow-none hover:bg-[#32353b]"
+                  className="h-11 w-11 rounded-full border-[var(--call-border)] bg-[var(--call-button-neutral)] p-0 text-[var(--call-fg)] shadow-none hover:bg-[var(--call-button-neutral-hover)]"
                   onClick={() => setHistoryDrawerOpen((current) => !current)}
                   size="icon"
                   type="button"
@@ -267,14 +267,14 @@ export function LiveChat() {
             <div className="absolute inset-x-0 top-0 bottom-0 flex items-stretch overflow-hidden px-3 pb-52 pt-24 md:px-5 md:pb-52 md:pt-24">
               <div className="flex min-h-0 min-w-0 flex-1 gap-4 md:gap-5">
               {stageVisual.kind === "image" ? (
-                <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[20px] border border-white/10 bg-[#1a1c20]">
+                <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[20px] border border-[var(--call-border)] bg-[var(--call-panel)]">
                   <div className="relative z-10 flex items-center justify-start px-4 py-4 md:px-5">
-                    <div className="flex items-center gap-2 rounded-full bg-black/40 px-3 py-1.5 text-sm text-white">
+                    <div className="flex items-center gap-2 rounded-full bg-[var(--call-chip-bg)] px-3 py-1.5 text-sm text-[var(--call-chip-fg)]">
                       <ImageIcon className="size-4" />
                       {stageVisual.isPreview ? "vidi preview" : "vidi presenting"}
                     </div>
                   </div>
-                  <div className="flex min-h-0 flex-1 items-center justify-center bg-[#16181c] p-4 md:p-8">
+                  <div className="flex min-h-0 flex-1 items-center justify-center bg-[var(--call-panel-muted)] p-4 md:p-8">
                     <img
                       alt="vidi presentation"
                       className="h-full max-h-full w-full max-w-full rounded-[12px] object-contain"
@@ -297,7 +297,7 @@ export function LiveChat() {
                     title="vidi"
                   >
                     {stageVisual.kind === "image" ? (
-                      <div className="flex h-full min-h-0 items-center justify-center bg-[#1b1d21] p-3">
+                      <div className="flex h-full min-h-0 items-center justify-center bg-[var(--call-panel-muted)] p-3">
                         <img
                           alt="vidi presentation preview"
                           className="h-full max-h-full w-full max-w-full rounded-lg object-contain"
@@ -305,8 +305,8 @@ export function LiveChat() {
                         />
                       </div>
                     ) : (
-                      <div className="flex h-full items-center justify-center bg-[#181a1f]">
-                        <div className="text-xl font-medium tracking-tight text-white/80">
+                      <div className="flex h-full items-center justify-center bg-[var(--call-panel-muted)]">
+                        <div className="text-xl font-medium tracking-tight text-[var(--call-fg-soft)]">
                           vidi
                         </div>
                       </div>
@@ -320,7 +320,7 @@ export function LiveChat() {
                     {cameraEnabled && userPreviewStream ? (
                       <LocalVideoPreview stream={userPreviewStream} />
                     ) : (
-                      <div className="flex h-full items-center justify-center bg-[#181a1f] text-sm text-white/50">
+                      <div className="flex h-full items-center justify-center bg-[var(--call-panel-muted)] text-sm text-[var(--call-fg-muted)]">
                         Camera off
                       </div>
                     )}
@@ -339,22 +339,22 @@ export function LiveChat() {
 
               {activeCaption ? (
                 <div className="pointer-events-none absolute bottom-36 left-1/2 z-20 w-[min(92vw,760px)] -translate-x-1/2 px-3 md:bottom-40">
-                  <div className="mx-auto rounded-2xl bg-[rgba(0,0,0,0.72)] px-4 py-3 text-center text-base leading-7 text-white shadow-none md:text-lg">
-                    <span className="font-medium text-white/80">vidi:</span>{" "}
+                  <div className="mx-auto rounded-2xl bg-[var(--call-caption-bg)] px-4 py-3 text-center text-base leading-7 text-[var(--call-fg)] shadow-none md:text-lg">
+                    <span className="font-medium text-[var(--call-caption-label)]">vidi:</span>{" "}
                     {activeCaption}
                   </div>
                 </div>
               ) : null}
             </div>
 
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-56 bg-[linear-gradient(180deg,rgba(17,19,23,0),rgba(17,19,23,0.88)_42%,#111317_100%)]" />
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-56 bg-[linear-gradient(180deg,var(--call-gradient-top),var(--call-gradient-mid)_42%,var(--call-gradient-bottom)_100%)]" />
 
             <div className="absolute inset-x-0 bottom-0 z-20 p-3 md:p-5">
               <div className="mx-auto flex w-full max-w-[980px] flex-col gap-3">
                 <Suggestions className="justify-center">
                   {SUGGESTIONS.map((suggestion) => (
                     <Suggestion
-                      className="border-white/10 bg-[#1a1c20] text-white/78 shadow-none hover:bg-[#202329]"
+                      className="border-[var(--call-border)] bg-[var(--call-panel)] text-[var(--call-fg-soft)] shadow-none hover:bg-[var(--call-panel-strong)]"
                       disabled={!connected}
                       key={suggestion}
                       onClick={sendSuggestion}
@@ -363,14 +363,14 @@ export function LiveChat() {
                   ))}
                 </Suggestions>
 
-                <div className="rounded-[22px] border border-white/10 bg-[#15171b] p-3 shadow-none md:p-4">
+                <div className="rounded-[22px] border border-[var(--call-border)] bg-[var(--call-dock-bg)] p-3 shadow-none md:p-4">
                   <div className="flex flex-wrap items-center justify-center gap-2">
                     <Button
                       className={cn(
-                        "h-12 w-12 rounded-full border-0 p-0 text-white shadow-none",
+                        "h-12 w-12 rounded-full border-0 p-0 text-[var(--primary-foreground)] shadow-none",
                         connected
-                          ? "bg-[#c5221f] hover:bg-[#d93025]"
-                          : "bg-[#1a73e8] hover:bg-[#2b7de9]",
+                          ? "bg-[var(--call-button-danger)] hover:bg-[var(--call-button-danger-hover)]"
+                          : "bg-[var(--call-button-active)] hover:bg-[var(--call-button-active-hover)]",
                       )}
                       disabled={connectionBusy}
                       onClick={connected ? disconnect : connect}
@@ -388,8 +388,8 @@ export function LiveChat() {
                       className={cn(
                         "h-12 w-12 rounded-full border-0 p-0 shadow-none",
                         microphoneEnabled
-                          ? "bg-[#1a73e8] text-white hover:bg-[#2b7de9]"
-                          : "bg-[#2a2d33] text-white hover:bg-[#32353b]",
+                          ? "bg-[var(--call-button-active)] text-[var(--primary-foreground)] hover:bg-[var(--call-button-active-hover)]"
+                          : "bg-[var(--call-button-neutral)] text-[var(--call-fg)] hover:bg-[var(--call-button-neutral-hover)]",
                       )}
                       disabled={!connected}
                       onClick={toggleMicrophone}
@@ -407,8 +407,8 @@ export function LiveChat() {
                       className={cn(
                         "h-12 w-12 rounded-full border-0 p-0 shadow-none",
                         cameraEnabled
-                          ? "bg-[#1a73e8] text-white hover:bg-[#2b7de9]"
-                          : "bg-[#2a2d33] text-white hover:bg-[#32353b]",
+                          ? "bg-[var(--call-button-active)] text-[var(--primary-foreground)] hover:bg-[var(--call-button-active-hover)]"
+                          : "bg-[var(--call-button-neutral)] text-[var(--call-fg)] hover:bg-[var(--call-button-neutral-hover)]",
                       )}
                       disabled={!connected}
                       onClick={() => void toggleCamera()}
@@ -430,19 +430,19 @@ export function LiveChat() {
 
           <div
             className={cn(
-              "absolute inset-y-0 right-0 z-30 flex w-full max-w-[390px] min-w-0 flex-col border-l border-white/10 bg-[#111317] shadow-[0_0_0_1px_rgba(255,255,255,0.02)] transition-transform duration-300 ease-out md:static md:z-0 md:w-[390px] md:max-w-[390px] md:shrink-0",
+              "absolute inset-y-0 right-0 z-30 flex w-full max-w-[390px] min-w-0 flex-col border-l border-[var(--call-border)] bg-[var(--call-shell-bg)] shadow-[0_0_0_1px_var(--call-tool-card)] transition-transform duration-300 ease-out md:static md:z-0 md:w-[390px] md:max-w-[390px] md:shrink-0",
               historyDrawerOpen ? "translate-x-0" : "translate-x-full md:w-0 md:max-w-0 md:translate-x-0 md:border-l-0 md:opacity-0",
             )}
           >
-            <div className="flex items-center justify-between border-b border-white/10 px-4 py-4">
+            <div className="flex items-center justify-between border-b border-[var(--call-border)] px-4 py-4">
               <div>
-                <h2 className="text-lg font-semibold text-white">Call history</h2>
-                <p className="text-sm text-white/60">
+                <h2 className="text-lg font-semibold text-[var(--call-fg)]">Call history</h2>
+                <p className="text-sm text-[var(--call-fg-muted)]">
                   Transcript, tool activity, and system events
                 </p>
               </div>
               <Button
-                className="rounded-full border-white/10 bg-[#202329] text-white hover:bg-[#2a2d33]"
+                className="rounded-full border-[var(--call-border)] bg-[var(--call-button-neutral)] text-[var(--call-fg)] hover:bg-[var(--call-button-neutral-hover)]"
                 onClick={() => setHistoryDrawerOpen(false)}
                 type="button"
                 variant="outline"
@@ -454,7 +454,7 @@ export function LiveChat() {
             <ScrollArea className="min-h-0 flex-1">
               <div className="min-w-0 space-y-4 overflow-x-hidden p-4 [&_code]:break-words [&_pre]:break-words [&_pre]:whitespace-pre-wrap">
                 {historyEntries.length === 0 ? (
-                  <div className="rounded-3xl border border-dashed border-white/10 bg-white/5 p-5 text-sm leading-6 text-white/60">
+                  <div className="rounded-3xl border border-dashed border-[var(--call-border)] bg-[var(--call-history-empty)] p-5 text-sm leading-6 text-[var(--call-fg-muted)]">
                     Connect the session to start the call. Transcript and tool
                     history will appear here while the main stage stays focused
                     on the live experience.
@@ -470,15 +470,15 @@ export function LiveChat() {
 
                       return (
                         <div
-                          className="w-full max-w-full min-w-0 overflow-hidden border border-white/10 bg-white/[0.03] p-3"
+                          className="w-full max-w-full min-w-0 overflow-hidden border border-[var(--call-border)] bg-[var(--call-tool-card)] p-3"
                           key={entry.id}
                         >
-                          <div className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-white/50">
+                          <div className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-[var(--call-fg-muted)]">
                             Tool
                           </div>
                           {entry.tool.imageUrl ? (
-                            <div className="mb-3 overflow-hidden rounded-2xl border border-white/10 bg-black/50">
-                              <div className="flex aspect-square w-full items-center justify-center bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.06),transparent_40%),rgba(0,0,0,0.22)] p-3">
+                            <div className="mb-3 overflow-hidden rounded-2xl border border-[var(--call-border)] bg-[var(--call-panel-muted)]">
+                              <div className="flex aspect-square w-full items-center justify-center bg-[radial-gradient(circle_at_top,var(--call-overlay),transparent_40%),var(--call-image-backdrop)] p-3">
                                 <img
                                   alt="Generated result"
                                   className="max-h-full w-full rounded-xl object-contain"
@@ -511,7 +511,7 @@ export function LiveChat() {
                               />
                             </ToolContent>
                           </Tool>
-                          <div className="mt-2 text-[11px] text-white/45">
+                          <div className="mt-2 text-[11px] text-[var(--call-fg-muted)]">
                             {new Date(entry.timestamp).toLocaleTimeString()}
                           </div>
                         </div>
@@ -525,15 +525,15 @@ export function LiveChat() {
                           entry.role === "model"
                             ? "w-full max-w-full border-transparent bg-transparent"
                             : entry.role === "user"
-                              ? "ml-auto w-fit max-w-full rounded-3xl border border-sky-400/15 bg-sky-400/[0.08]"
+                              ? "ml-auto w-fit max-w-full rounded-3xl border border-[var(--call-user-border)] bg-[var(--call-user-bg)]"
                               : "w-full max-w-full border-transparent bg-transparent",
                         )}
                         key={entry.id}
                       >
-                        <div className="max-w-full break-words text-sm leading-6 text-white/86">
+                        <div className="max-w-full break-words text-sm leading-6 text-[var(--call-fg)]">
                           {entry.text}
                         </div>
-                        <div className="mt-2 text-[11px] text-white/45">
+                        <div className="mt-2 text-[11px] text-[var(--call-fg-muted)]">
                           {new Date(entry.timestamp).toLocaleTimeString()}
                         </div>
                       </div>
@@ -543,15 +543,15 @@ export function LiveChat() {
               </div>
             </ScrollArea>
 
-            <div className="border-t border-white/10 p-4">
+            <div className="border-t border-[var(--call-border)] p-4">
               <PromptInput
-                className="rounded-[18px] border border-white/10 bg-[#101216] shadow-none"
+                className="rounded-[18px] border border-[var(--call-border)] bg-[var(--call-panel)] shadow-none"
                 onError={() => undefined}
                 onSubmit={(message) => void sendPrompt(message)}
               >
                 <PromptInputBody>
                   <PromptInputTextarea
-                    className="text-white placeholder:text-white/45"
+                    className="text-[var(--call-fg)] placeholder:text-[var(--call-fg-muted)]"
                     onChange={(event) => setDraft(event.target.value)}
                     placeholder="Send a text prompt into the live call"
                     value={draft}
@@ -570,7 +570,7 @@ export function LiveChat() {
           {historyDrawerOpen ? (
             <button
               aria-label="Close history drawer"
-              className="absolute inset-0 z-20 bg-black/35 md:hidden"
+              className="absolute inset-0 z-20 bg-[var(--call-overlay)] md:hidden"
               onClick={() => setHistoryDrawerOpen(false)}
               type="button"
             />
@@ -591,26 +591,26 @@ function AiIdleStage({
   title: string;
 }) {
   return (
-    <div className="relative flex h-full min-w-0 flex-1 items-center justify-center overflow-hidden rounded-[20px] border border-white/10 bg-[#17191d]">
+    <div className="relative flex h-full min-w-0 flex-1 items-center justify-center overflow-hidden rounded-[20px] border border-[var(--call-border)] bg-[var(--call-panel)]">
       <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),transparent_22%),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(0deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:auto,28px_28px,28px_28px]" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,var(--call-overlay),transparent_22%),linear-gradient(90deg,var(--call-stage-grid)_1px,transparent_1px),linear-gradient(0deg,var(--call-stage-grid)_1px,transparent_1px)] bg-[size:auto,28px_28px,28px_28px]" />
       </div>
 
       <div className="relative mx-auto flex max-w-2xl flex-col items-center gap-6 px-6 text-center">
-        <div className="flex h-24 w-24 items-center justify-center rounded-full bg-[#22252a]">
+        <div className="flex h-24 w-24 items-center justify-center rounded-full bg-[var(--call-panel-strong)]">
           <div className="relative flex h-14 w-14 items-center justify-center">
-            <div className="absolute inset-0 rounded-full border border-white/10" />
-            <div className="h-4 w-4 rounded-full bg-white/90" />
+            <div className="absolute inset-0 rounded-full border border-[var(--call-border)]" />
+            <div className="h-4 w-4 rounded-full bg-[var(--call-fg)]/90" />
           </div>
         </div>
         <div className="space-y-3">
-          <Badge className="rounded-full border border-white/10 bg-[#22252a] px-3 py-1 text-white/70 hover:bg-[#22252a]">
+          <Badge className="rounded-full border border-[var(--call-border)] bg-[var(--call-panel-strong)] px-3 py-1 text-[var(--call-fg-soft)] hover:bg-[var(--call-panel-strong)]">
             {connected ? "In call" : "Standby"}
           </Badge>
-          <h2 className="text-3xl font-medium tracking-tight text-white md:text-5xl">
+          <h2 className="text-3xl font-medium tracking-tight text-[var(--call-fg)] md:text-5xl">
             {title}
           </h2>
-          <p className="mx-auto max-w-xl text-sm leading-7 text-white/65 md:text-base">
+          <p className="mx-auto max-w-xl text-sm leading-7 text-[var(--call-fg-muted)] md:text-base">
             {subtitle}
           </p>
         </div>
@@ -633,14 +633,14 @@ function ParticipantTile({
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-[18px] border bg-[#17191d]",
-        active ? "border-[#7baaf7]" : "border-white/10",
+        "overflow-hidden rounded-[18px] border bg-[var(--call-panel)]",
+        active ? "border-[var(--call-accent-border)]" : "border-[var(--call-border)]",
       )}
     >
-      <div className="aspect-[4/3] overflow-hidden bg-[#1a1c20]">{children}</div>
-      <div className="flex items-center justify-between px-3 py-2 text-sm text-white">
+      <div className="aspect-[4/3] overflow-hidden bg-[var(--call-panel-muted)]">{children}</div>
+      <div className="flex items-center justify-between px-3 py-2 text-sm text-[var(--call-fg)]">
         <span>{label}</span>
-        <span className="text-xs text-white/50">{title}</span>
+        <span className="text-xs text-[var(--call-fg-muted)]">{title}</span>
       </div>
     </div>
   );
@@ -653,12 +653,12 @@ function GenerateImageChainEntry({ entry }: { entry: TranscriptEntry }) {
   return (
     <div className="w-full max-w-full min-w-0 overflow-hidden p-3">
       <ChainOfThought className="space-y-3" defaultOpen>
-        <ChainOfThoughtHeader className="text-white/72 hover:text-white">
+        <ChainOfThoughtHeader className="text-[var(--call-fg-soft)] hover:text-[var(--call-fg)]">
           Image generation
         </ChainOfThoughtHeader>
         <ChainOfThoughtContent className="space-y-3">
           <ChainOfThoughtStep
-            className="text-white/82"
+            className="text-[var(--call-fg)]"
             description={prompt ?? undefined}
             icon={ImageIcon}
             label={completed ? "Generated image from prompt" : "Generating image"}
@@ -666,7 +666,7 @@ function GenerateImageChainEntry({ entry }: { entry: TranscriptEntry }) {
           />
           {entry.tool?.imageUrl ? (
             <ChainOfThoughtStep
-              className="text-white/82"
+              className="text-[var(--call-fg)]"
               icon={ImageIcon}
               label="Attached result"
               status="complete"
@@ -685,7 +685,7 @@ function GenerateImageChainEntry({ entry }: { entry: TranscriptEntry }) {
           ) : null}
         </ChainOfThoughtContent>
       </ChainOfThought>
-      <div className="mt-2 text-[11px] text-white/45">
+      <div className="mt-2 text-[11px] text-[var(--call-fg-muted)]">
         {new Date(entry.timestamp).toLocaleTimeString()}
       </div>
     </div>
@@ -700,21 +700,21 @@ function LocalPreviewTile({
   stream: MediaStream | null;
 }) {
   return (
-    <div className="overflow-hidden rounded-[18px] border border-[#7baaf7] bg-[#17191d] shadow-none">
-      <div className="aspect-[4/5] overflow-hidden bg-black">
+    <div className="overflow-hidden rounded-[18px] border border-[var(--call-accent-border)] bg-[var(--call-panel)] shadow-none">
+      <div className="aspect-[4/5] overflow-hidden bg-[var(--call-panel-muted)]">
         {stream ? (
           <LocalVideoPreview stream={stream} />
         ) : (
-          <div className="flex h-full items-center justify-center bg-[#181a1f] px-4 text-center text-sm text-white/55">
+          <div className="flex h-full items-center justify-center bg-[var(--call-panel-muted)] px-4 text-center text-sm text-[var(--call-fg-muted)]">
             {permissionState === "denied"
               ? "Camera access denied"
               : "Starting local camera preview"}
           </div>
         )}
       </div>
-      <div className="flex items-center justify-between px-3 py-2 text-sm text-white">
+      <div className="flex items-center justify-between px-3 py-2 text-sm text-[var(--call-fg)]">
         <span>You</span>
-        <span className="text-xs text-white/55">Camera</span>
+        <span className="text-xs text-[var(--call-fg-muted)]">Camera</span>
       </div>
     </div>
   );

@@ -160,14 +160,14 @@ export function LiveChat() {
     };
   }, [connected, transcript]);
 
+  const historyEntries = useMemo(() => groupTranscriptEntries(transcript), [transcript]);
+
   const activeCaption = useMemo(() => {
-    return [...transcript]
+    return [...historyEntries]
       .reverse()
       .find((entry) => entry.role === "model" && entry.kind === "text")
       ?.text;
-  }, [transcript]);
-
-  const historyEntries = useMemo(() => transcript, [transcript]);
+  }, [historyEntries]);
 
   const connect = async () => {
     await clientRef.current?.connect();
@@ -439,7 +439,7 @@ export function LiveChat() {
 
           <div
             className={cn(
-              "absolute inset-y-0 right-0 z-30 flex w-full max-w-[390px] flex-col border-l border-white/10 bg-[#0d1016]/95 shadow-2xl backdrop-blur-2xl transition-transform duration-300 ease-out md:w-[390px]",
+              "absolute inset-y-0 right-0 z-30 flex w-full max-w-[390px] min-w-0 flex-col border-l border-white/10 bg-[#0d1016]/95 shadow-2xl backdrop-blur-2xl transition-transform duration-300 ease-out md:w-[390px]",
               historyDrawerOpen ? "translate-x-0" : "translate-x-full",
             )}
           >
@@ -461,7 +461,7 @@ export function LiveChat() {
             </div>
 
             <ScrollArea className="min-h-0 flex-1">
-              <div className="space-y-4 p-4">
+              <div className="min-w-0 space-y-4 overflow-x-hidden p-4 [&_code]:break-words [&_pre]:break-words [&_pre]:whitespace-pre-wrap">
                 {historyEntries.length === 0 ? (
                   <div className="rounded-3xl border border-dashed border-white/10 bg-white/5 p-5 text-sm leading-6 text-white/60">
                     Connect the session to start the call. Transcript and tool
@@ -473,7 +473,7 @@ export function LiveChat() {
                     if (entry.tool) {
                       return (
                         <div
-                          className="rounded-3xl border border-white/10 bg-white/[0.04] p-3"
+                          className="w-full max-w-full min-w-0 overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] p-3"
                           key={entry.id}
                         >
                           <div className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-white/50">
@@ -481,27 +481,34 @@ export function LiveChat() {
                           </div>
                           {entry.tool.imageUrl ? (
                             <div className="mb-3 overflow-hidden rounded-2xl border border-white/10 bg-black/50">
-                              <div
-                                aria-hidden="true"
-                                className="aspect-square w-full bg-cover bg-center"
-                                style={{
-                                  backgroundImage: `url(${entry.tool.imageUrl})`,
-                                }}
-                              />
+                              <div className="flex aspect-square w-full items-center justify-center bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.06),transparent_40%),rgba(0,0,0,0.22)] p-3">
+                                <img
+                                  alt="Generated result"
+                                  className="max-h-full w-full rounded-xl object-contain"
+                                  src={entry.tool.imageUrl}
+                                />
+                              </div>
                             </div>
                           ) : null}
-                          <Tool defaultOpen={entry.tool.state !== "output-available"}>
+                          <Tool
+                            className="w-full max-w-full min-w-0 overflow-hidden"
+                            defaultOpen={entry.tool.state !== "output-available"}
+                          >
                             <ToolHeader
                               state={entry.tool.state}
                               title={entry.tool.name}
                               toolName={entry.tool.name}
                               type="dynamic-tool"
                             />
-                            <ToolContent>
+                            <ToolContent className="w-full max-w-full min-w-0">
                               {entry.tool.input !== undefined ? (
-                                <ToolInput input={entry.tool.input} />
+                                <ToolInput
+                                  className="w-full max-w-full min-w-0"
+                                  input={entry.tool.input}
+                                />
                               ) : null}
                               <ToolOutput
+                                className="w-full max-w-full min-w-0"
                                 errorText={entry.tool.errorText}
                                 output={entry.tool.output}
                               />
@@ -517,7 +524,7 @@ export function LiveChat() {
                     return (
                       <div
                         className={cn(
-                          "rounded-3xl border p-3",
+                          "w-full max-w-full min-w-0 overflow-hidden rounded-3xl border p-3",
                           entry.role === "model"
                             ? "border-white/10 bg-white/[0.06]"
                             : entry.role === "user"
@@ -529,7 +536,9 @@ export function LiveChat() {
                         <div className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-white/50">
                           {entry.role}
                         </div>
-                        <div className="text-sm leading-6 text-white/86">{entry.text}</div>
+                        <div className="max-w-full break-words text-sm leading-6 text-white/86">
+                          {entry.text}
+                        </div>
                         <div className="mt-2 text-[11px] text-white/45">
                           {new Date(entry.timestamp).toLocaleTimeString()}
                         </div>
@@ -663,6 +672,90 @@ function permissionLabel(value: LivePermissionsState[keyof LivePermissionsState]
     default:
       return "unknown";
   }
+}
+
+function isPreviewToolEntry(entry: TranscriptEntry): boolean {
+  return Boolean(
+    entry.tool?.imageUrl &&
+      entry.tool.output &&
+      typeof entry.tool.output === "object" &&
+      "status" in entry.tool.output &&
+      entry.tool.output.status === "preview",
+  );
+}
+
+function mergeTurnText(previous: string, next: string): string {
+  const trimmedPrevious = previous.trim();
+  const trimmedNext = next.trim();
+
+  if (!trimmedPrevious) {
+    return trimmedNext;
+  }
+
+  if (!trimmedNext) {
+    return trimmedPrevious;
+  }
+
+  if (trimmedPrevious === trimmedNext) {
+    return trimmedPrevious;
+  }
+
+  if (trimmedNext.includes(trimmedPrevious)) {
+    return trimmedNext;
+  }
+
+  if (trimmedPrevious.includes(trimmedNext)) {
+    return trimmedPrevious;
+  }
+
+  return `${trimmedPrevious}\n\n${trimmedNext}`;
+}
+
+function canMergeTextEntries(previous: TranscriptEntry, next: TranscriptEntry): boolean {
+  return (
+    previous.kind === "text" &&
+    next.kind === "text" &&
+    previous.role === next.role &&
+    !previous.tool &&
+    !next.tool
+  );
+}
+
+function isImageGenerationStatusEntry(entry: TranscriptEntry): boolean {
+  return (
+    entry.role === "system" &&
+    entry.kind === "status" &&
+    /image generation/i.test(entry.text)
+  );
+}
+
+function groupTranscriptEntries(entries: TranscriptEntry[]): TranscriptEntry[] {
+  const grouped: TranscriptEntry[] = [];
+
+  for (const entry of entries) {
+    if (isPreviewToolEntry(entry) || isImageGenerationStatusEntry(entry)) {
+      continue;
+    }
+
+    const lastEntry = grouped[grouped.length - 1];
+
+    if (lastEntry && canMergeTextEntries(lastEntry, entry)) {
+      lastEntry.text = mergeTurnText(lastEntry.text, entry.text);
+      lastEntry.timestamp = entry.timestamp;
+      continue;
+    }
+
+    grouped.push({
+      ...entry,
+      tool: entry.tool
+        ? {
+            ...entry.tool,
+          }
+        : undefined,
+    });
+  }
+
+  return grouped;
 }
 
 function detailForStatus(status: LiveSessionStatus): string {

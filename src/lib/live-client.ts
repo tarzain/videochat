@@ -2,7 +2,6 @@
 
 import {
   GoogleGenAI,
-  Modality,
   type FunctionResponse,
   type LiveServerMessage,
   type Session,
@@ -224,9 +223,6 @@ export class GeminiLiveClient {
 
       this.session = await ai.live.connect({
         model: clientConfig.model,
-        config: {
-          responseModalities: [Modality.AUDIO],
-        },
         callbacks: {
           onopen: () => {
             this.handlers.onStatusChange("connected");

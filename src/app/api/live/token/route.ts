@@ -32,7 +32,6 @@ export async function POST() {
           model: DEFAULT_LIVE_MODEL,
           config: LIVE_CONNECT_CONFIG,
         },
-        lockAdditionalFields: [],
       },
     });
 

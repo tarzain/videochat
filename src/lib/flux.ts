@@ -7,7 +7,8 @@ import type {
   GenerateImageResult,
 } from "@/lib/live-types";
 
-const FLUX_ENDPOINT = "fal-ai/flux-2";
+const FLUX_TEXT_ENDPOINT = "fal-ai/flux-2";
+const FLUX_EDIT_ENDPOINT = "fal-ai/flux-2/edit";
 const FLUX_IMAGE_SIZE = 1024;
 const FLUX_STYLE_PREFIX =
   "Beautiful illustrated poster with clean ink linework, soft diffuse lighting, " +
@@ -86,8 +87,10 @@ function createFluxInput(params: {
       params.useCurrentCameraImage && params.cameraSnapshot
         ? await uploadCameraSnapshot(params.cameraSnapshot)
         : undefined;
+    const endpoint = referenceImageUrl ? FLUX_EDIT_ENDPOINT : FLUX_TEXT_ENDPOINT;
 
     return {
+      endpoint,
       prompt,
       input: {
         prompt,
@@ -191,7 +194,7 @@ export async function streamFluxImage(
   ensureFalConfigured();
 
   const resolveInput = createFluxInput(params);
-  const { input, prompt, usedCameraImage, usedStylePrefix } =
+  const { endpoint, input, prompt, usedCameraImage, usedStylePrefix } =
     await resolveInput();
 
   await onEvent({
@@ -203,7 +206,7 @@ export async function streamFluxImage(
         : "Starting faithful Flux image generation.",
   });
 
-  const stream = await fal.stream(FLUX_ENDPOINT, { input });
+  const stream = await fal.stream(endpoint, { input });
   const emittedPreviewUrls = new Set<string>();
 
   for await (const update of stream) {

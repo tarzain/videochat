@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { generateFluxImage } from "@/lib/flux";
 import type { ToolCallRequest, ToolCallResponse } from "@/lib/live-types";
 
 export const runtime = "nodejs";
@@ -32,6 +33,41 @@ function formatCurrentTime(timeZone: string | undefined) {
   };
 }
 
+function getTimeResult(args: unknown) {
+  const parsedArgs =
+    args && typeof args === "object" ? (args as { timeZone?: unknown }) : {};
+
+  return formatCurrentTime(
+    typeof parsedArgs.timeZone === "string" ? parsedArgs.timeZone : undefined,
+  );
+}
+
+async function getGenerateImageResult(request: ToolCallRequest) {
+  const parsedArgs =
+    request.args && typeof request.args === "object"
+      ? (request.args as { contents?: unknown; useCurrentCameraImage?: unknown })
+      : {};
+  const contents =
+    typeof parsedArgs.contents === "string" ? parsedArgs.contents.trim() : "";
+  const useCurrentCameraImage = parsedArgs.useCurrentCameraImage === true;
+
+  if (!contents) {
+    throw new Error("generate_image requires a non-empty `contents` string.");
+  }
+
+  if (useCurrentCameraImage && !request.cameraSnapshot) {
+    throw new Error(
+      "generate_image requested the current camera image, but no camera snapshot was available.",
+    );
+  }
+
+  return generateFluxImage({
+    contents,
+    cameraSnapshot: request.cameraSnapshot,
+    useCurrentCameraImage,
+  });
+}
+
 export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as unknown;
 
@@ -47,7 +83,7 @@ export async function POST(request: Request) {
     callId: body.callId,
   };
 
-  if (body.name !== "get_time") {
+  if (!["get_time", "generate_image"].includes(body.name)) {
     const payload: ToolCallResponse = {
       ...responseBase,
       result: null,
@@ -57,15 +93,11 @@ export async function POST(request: Request) {
     return NextResponse.json(payload, { status: 400 });
   }
 
-  const args =
-    body.args && typeof body.args === "object"
-      ? (body.args as { timeZone?: unknown })
-      : {};
-
   try {
-    const result = formatCurrentTime(
-      typeof args.timeZone === "string" ? args.timeZone : undefined,
-    );
+    const result =
+      body.name === "generate_image"
+        ? await getGenerateImageResult(body)
+        : getTimeResult(body.args);
 
     const payload: ToolCallResponse = {
       ...responseBase,

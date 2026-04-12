@@ -43,6 +43,7 @@ import type {
 import type { ChatStatus } from "ai";
 import {
   AudioLinesIcon,
+  ImageIcon,
   MicIcon,
   MicOffIcon,
   VideoIcon,
@@ -59,6 +60,7 @@ const INITIAL_PERMISSIONS: LivePermissionsState = {
 const SUGGESTIONS = [
   "What time is it in Tokyo?",
   "Summarize what you see from my camera.",
+  "Generate a poster of a moonlit tea shop.",
   "Help me brainstorm a landing page headline.",
   "Walk me through a React state bug.",
 ];
@@ -306,8 +308,9 @@ export function LiveChat() {
 
           <div className="rounded-2xl border border-border/70 bg-background/30 px-4 py-3 text-sm text-muted-foreground">
             Ask for the current time in a timezone like{" "}
-            <code className="font-mono text-foreground">Europe/London</code> to
-            exercise the demo server-side tool.
+            <code className="font-mono text-foreground">Europe/London</code>,
+            or ask Gemini to generate an illustration and optionally use your
+            current camera image as reference.
           </div>
         </aside>
 
@@ -354,6 +357,21 @@ export function LiveChat() {
                             <div className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
                               Tool
                             </div>
+                            {entry.tool.imageUrl ? (
+                              <div className="mb-3 overflow-hidden rounded-2xl border border-border/70 bg-background/40">
+                                <div
+                                  aria-hidden="true"
+                                  className="aspect-square w-full bg-cover bg-center"
+                                  style={{
+                                    backgroundImage: `url(${entry.tool.imageUrl})`,
+                                  }}
+                                />
+                                <div className="flex items-center gap-2 border-t border-border/70 px-3 py-2 text-xs text-muted-foreground">
+                                  <ImageIcon className="size-3.5" />
+                                  Generated image
+                                </div>
+                              </div>
+                            ) : null}
                             <Tool defaultOpen={entry.tool.state !== "output-available"}>
                               <ToolHeader
                                 state={entry.tool.state}

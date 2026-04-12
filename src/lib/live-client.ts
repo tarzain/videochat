@@ -8,6 +8,7 @@ import {
 } from "@google/genai";
 
 import type {
+  CameraSnapshotPayload,
   LivePermissionsState,
   LiveSessionStatus,
   TokenRouteResponse,
@@ -363,6 +364,11 @@ export class GeminiLiveClient {
         name,
         args: functionCall.args ?? {},
         callId,
+        cameraSnapshot:
+          name === "generate_image" &&
+          functionCall.args?.useCurrentCameraImage === true
+            ? await this.getCurrentCameraSnapshot()
+            : undefined,
       };
 
       this.handlers.onTranscriptEntry(
@@ -408,6 +414,14 @@ export class GeminiLiveClient {
             input: request.args,
             output: payload.error ? undefined : payload.result,
             errorText: payload.error,
+            imageUrl:
+              payload.name === "generate_image" &&
+              payload.result &&
+              typeof payload.result === "object" &&
+              "imageUrl" in payload.result &&
+              typeof payload.result.imageUrl === "string"
+                ? payload.result.imageUrl
+                : undefined,
           },
         ),
       );
@@ -562,6 +576,34 @@ export class GeminiLiveClient {
         });
       }, "image/jpeg", 0.78);
     }, VIDEO_FRAME_INTERVAL_MS);
+  }
+
+  private async getCurrentCameraSnapshot(): Promise<CameraSnapshotPayload | undefined> {
+    if (!this.cameraEnabled || !this.videoCanvas || !this.videoElement) {
+      return undefined;
+    }
+
+    const width = this.videoElement.videoWidth;
+    const height = this.videoElement.videoHeight;
+    const context = this.videoCanvas.getContext("2d");
+
+    if (!width || !height || !context) {
+      return undefined;
+    }
+
+    this.videoCanvas.width = width;
+    this.videoCanvas.height = height;
+    context.drawImage(this.videoElement, 0, 0, width, height);
+
+    const blob = await new Promise<Blob | null>((resolve) => {
+      this.videoCanvas?.toBlob(resolve, "image/jpeg", 0.86);
+    });
+
+    if (!blob) {
+      return undefined;
+    }
+
+    return blobToInlineData(blob);
   }
 
   private stopVideoFrames(): void {

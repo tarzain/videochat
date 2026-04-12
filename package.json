@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@fal-ai/client": "^1.9.5",
     "@google/genai": "^1.49.0",
     "@streamdown/cjk": "^1.0.3",
     "@streamdown/code": "^1.1.1",

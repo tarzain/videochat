@@ -19,12 +19,25 @@ export type TranscriptToolState =
   | "output-available"
   | "output-error";
 
+export interface CameraSnapshotPayload {
+  data: string;
+  mimeType: string;
+}
+
+export interface GenerateImageResult {
+  imageUrl: string;
+  prompt: string;
+  seed?: number;
+  usedCameraImage: boolean;
+}
+
 export interface TranscriptToolData {
   name: string;
   state: TranscriptToolState;
   input?: unknown;
   output?: unknown;
   errorText?: string;
+  imageUrl?: string;
 }
 
 export interface TranscriptEntry {
@@ -40,6 +53,7 @@ export interface ToolCallRequest {
   name: string;
   args: unknown;
   callId: string;
+  cameraSnapshot?: CameraSnapshotPayload;
 }
 
 export interface ToolCallResponse {

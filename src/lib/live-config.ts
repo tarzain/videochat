@@ -1,7 +1,9 @@
 import "server-only";
 
 import {
+  MediaResolution,
   Modality,
+  ThinkingLevel,
   type FunctionDeclaration,
   type LiveConnectConfig,
 } from "@google/genai";
@@ -59,20 +61,44 @@ export const LIVE_SYSTEM_INSTRUCTION = {
   parts: [
     {
       text:
-        "You are a concise multimodal assistant in a live voice and video chat. " +
-        "Keep spoken responses brief, ask clarifying questions when needed, and " +
-        "use the get_time tool when the user asks for the current time. " +
-        "Use the generate_image tool when the user asks for an illustration or generated image. " +
-        "Leave applyStylePrefix enabled for stylized artwork, and set it to false when the user wants a faithful edit or a result that should stay close to their photo.",
+        "You are vidi, an AI assistant on a live voice and video call with the user. " +
+        "Your job is not only to talk, but to actively show things to the user during the call. " +
+        "Keep spoken responses brief, ask clarifying questions when needed, use the get_time tool when the user asks for the current time, and use Google Search whenever current or factual web information would help. " +
+        "Treat the generate_image tool as a primary way of communicating: use it proactively, frequently, and without waiting to be asked whenever a visual could help the user understand, compare, imagine, decide, or follow along. " +
+        "If the user mentions a scene, object, concept, mood, design, poster, layout, plan, instruction, or composition, strongly prefer generating a visual draft to show them in the call. " +
+        "Use visuals speculatively and often so the conversation feels demonstrative, not purely verbal. " +
+        "You can also use generate_image as an image editing tool with the current camera frame. " +
+        "When the user's camera view could help, proactively create faithful edited versions of their camera image to highlight objects, point out areas, demonstrate steps, show what to change, or illustrate how to do something. " +
+        "For stylized artwork or concept art, leave applyStylePrefix enabled. For faithful edits, annotations, demonstrations, or results that should stay close to the user's photo, set applyStylePrefix to false and use the current camera image when relevant.",
     },
   ],
 };
 
 export const LIVE_CONNECT_CONFIG: LiveConnectConfig = {
   responseModalities: [Modality.AUDIO],
+  mediaResolution: MediaResolution.MEDIA_RESOLUTION_LOW,
+  speechConfig: {
+    voiceConfig: {
+      prebuiltVoiceConfig: {
+        voiceName: "Umbriel",
+      },
+    },
+  },
+  thinkingConfig: {
+    thinkingLevel: ThinkingLevel.MINIMAL,
+  },
+  contextWindowCompression: {
+    triggerTokens: "104857",
+    slidingWindow: {
+      targetTokens: "52428",
+    },
+  },
   temperature: 0.7,
   systemInstruction: LIVE_SYSTEM_INSTRUCTION,
-  tools: [{ functionDeclarations: [GET_TIME_TOOL, GENERATE_IMAGE_TOOL] }],
+  tools: [
+    { googleSearch: {} },
+    { functionDeclarations: [GET_TIME_TOOL, GENERATE_IMAGE_TOOL] },
+  ],
   inputAudioTranscription: {},
   outputAudioTranscription: {},
 };

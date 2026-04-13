@@ -10,6 +10,7 @@ import {
   ChainOfThoughtImage,
   ChainOfThoughtStep,
 } from "@/components/ai-elements/chain-of-thought";
+import { CodeBlock } from "@/components/ai-elements/code-block";
 import {
   PromptInput,
   PromptInputBody,
@@ -18,13 +19,6 @@ import {
   PromptInputTextarea,
 } from "@/components/ai-elements/prompt-input";
 import { Suggestion, Suggestions } from "@/components/ai-elements/suggestion";
-import {
-  Tool,
-  ToolContent,
-  ToolHeader,
-  ToolInput,
-  ToolOutput,
-} from "@/components/ai-elements/tool";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -38,6 +32,7 @@ import type {
 import type { ChatStatus } from "ai";
 import {
   ImageIcon,
+  CheckCircleIcon,
   MessageSquareIcon,
   MicIcon,
   MicOffIcon,
@@ -45,6 +40,7 @@ import {
   PhoneOffIcon,
   VideoIcon,
   VideoOffIcon,
+  WrenchIcon,
   XIcon,
 } from "lucide-react";
 
@@ -468,54 +464,7 @@ export function LiveChat() {
                         );
                       }
 
-                      return (
-                        <div
-                          className="w-full max-w-full min-w-0 overflow-hidden border border-[var(--call-border)] bg-[var(--call-tool-card)] p-3"
-                          key={entry.id}
-                        >
-                          <div className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-[var(--call-fg-muted)]">
-                            Tool
-                          </div>
-                          {entry.tool.imageUrl ? (
-                            <div className="mb-3 overflow-hidden rounded-2xl border border-[var(--call-border)] bg-[var(--call-panel-muted)]">
-                              <div className="flex aspect-square w-full items-center justify-center bg-[radial-gradient(circle_at_top,var(--call-overlay),transparent_40%),var(--call-image-backdrop)] p-3">
-                                <img
-                                  alt="Generated result"
-                                  className="max-h-full w-full rounded-xl object-contain"
-                                  src={entry.tool.imageUrl}
-                                />
-                              </div>
-                            </div>
-                          ) : null}
-                          <Tool
-                            className="w-full max-w-full min-w-0 overflow-hidden"
-                            defaultOpen={entry.tool.state !== "output-available"}
-                          >
-                            <ToolHeader
-                              state={entry.tool.state}
-                              title={entry.tool.name}
-                              toolName={entry.tool.name}
-                              type="dynamic-tool"
-                            />
-                            <ToolContent className="w-full max-w-full min-w-0">
-                              {entry.tool.input !== undefined ? (
-                                <ToolInput
-                                  className="w-full max-w-full min-w-0"
-                                  input={entry.tool.input}
-                                />
-                              ) : null}
-                              <ToolOutput
-                                className="w-full max-w-full min-w-0"
-                                errorText={entry.tool.errorText}
-                                output={entry.tool.output}
-                              />
-                            </ToolContent>
-                          </Tool>
-                          <div className="mt-2 text-[11px] text-[var(--call-fg-muted)]">
-                            {new Date(entry.timestamp).toLocaleTimeString()}
-                          </div>
-                        </div>
-                      );
+                      return <GenericToolChainEntry entry={entry} key={entry.id} />;
                     }
 
                     return (
@@ -692,6 +641,59 @@ function GenerateImageChainEntry({ entry }: { entry: TranscriptEntry }) {
   );
 }
 
+function GenericToolChainEntry({ entry }: { entry: TranscriptEntry }) {
+  const toolName = formatToolName(entry.tool?.name ?? "tool");
+  const inputSummary = summarizeToolInput(entry.tool?.input);
+  const completed = entry.tool?.state === "output-available";
+  const failed = entry.tool?.state === "output-error";
+
+  return (
+    <div className="w-full max-w-full min-w-0 overflow-hidden p-3">
+      <ChainOfThought className="space-y-3" defaultOpen>
+        <ChainOfThoughtHeader className="text-[var(--call-fg-soft)] hover:text-[var(--call-fg)]">
+          {toolName}
+        </ChainOfThoughtHeader>
+        <ChainOfThoughtContent className="space-y-3">
+          <ChainOfThoughtStep
+            className="text-[var(--call-fg)]"
+            description={inputSummary ?? undefined}
+            icon={WrenchIcon}
+            label={
+              completed
+                ? `Called ${toolName}`
+                : failed
+                  ? `${toolName} failed`
+                  : `Calling ${toolName}`
+            }
+            status={completed || failed ? "complete" : "active"}
+          />
+          {entry.tool?.output !== undefined || entry.tool?.errorText ? (
+            <ChainOfThoughtStep
+              className="text-[var(--call-fg)]"
+              icon={CheckCircleIcon}
+              label={failed ? "Returned error" : "Returned result"}
+              status="complete"
+            >
+              <div className="mt-2 overflow-hidden rounded-xl border border-[var(--call-border)] bg-[var(--call-tool-card)]">
+                {entry.tool?.errorText ? (
+                  <div className="px-3 py-2 text-sm leading-6 text-[var(--destructive)]">
+                    {entry.tool.errorText}
+                  </div>
+                ) : (
+                  renderToolResult(entry.tool?.output)
+                )}
+              </div>
+            </ChainOfThoughtStep>
+          ) : null}
+        </ChainOfThoughtContent>
+      </ChainOfThought>
+      <div className="mt-2 text-[11px] text-[var(--call-fg-muted)]">
+        {new Date(entry.timestamp).toLocaleTimeString()}
+      </div>
+    </div>
+  );
+}
+
 function LocalPreviewTile({
   permissionState,
   stream,
@@ -760,6 +762,49 @@ function isPreviewToolEntry(entry: TranscriptEntry): boolean {
   );
 }
 
+function formatToolName(name: string): string {
+  return name.replace(/[_-]+/g, " ").trim();
+}
+
+function summarizeToolInput(input: unknown): string | null {
+  if (!input || typeof input !== "object") {
+    return null;
+  }
+
+  const entries = Object.entries(input)
+    .filter(([, value]) => value !== undefined && value !== null && value !== false)
+    .slice(0, 3)
+    .map(([key, value]) => {
+      if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+        return `${key}: ${String(value)}`;
+      }
+
+      return key;
+    });
+
+  return entries.length > 0 ? entries.join(", ") : null;
+}
+
+function renderToolResult(output: unknown): ReactNode {
+  if (output === undefined || output === null) {
+    return null;
+  }
+
+  if (
+    typeof output === "string" ||
+    typeof output === "number" ||
+    typeof output === "boolean"
+  ) {
+    return (
+      <div className="px-3 py-2 text-sm leading-6 text-[var(--call-fg)]">
+        {String(output)}
+      </div>
+    );
+  }
+
+  return <CodeBlock code={JSON.stringify(output, null, 2)} language="json" />;
+}
+
 function isGenerateImageChainEntry(entry: TranscriptEntry): boolean {
   return (
     entry.tool?.name === "generate_image" &&
@@ -767,7 +812,7 @@ function isGenerateImageChainEntry(entry: TranscriptEntry): boolean {
   );
 }
 
-function canMergeGenerateImageEntries(
+function canMergeToolEntries(
   previous: TranscriptEntry,
   next: TranscriptEntry,
 ): boolean {
@@ -776,12 +821,11 @@ function canMergeGenerateImageEntries(
     next.kind === "tool-result" &&
     previous.role === "tool" &&
     next.role === "tool" &&
-    previous.tool?.name === "generate_image" &&
-    next.tool?.name === "generate_image"
+    previous.tool?.name === next.tool?.name
   );
 }
 
-function mergeGenerateImageEntries(
+function mergeToolEntries(
   previous: TranscriptEntry,
   next: TranscriptEntry,
 ): TranscriptEntry {
@@ -878,8 +922,8 @@ function groupTranscriptEntries(entries: TranscriptEntry[]): TranscriptEntry[] {
 
     const lastEntry = grouped[grouped.length - 1];
 
-    if (lastEntry && canMergeGenerateImageEntries(lastEntry, entry)) {
-      grouped[grouped.length - 1] = mergeGenerateImageEntries(lastEntry, entry);
+    if (lastEntry && canMergeToolEntries(lastEntry, entry)) {
+      grouped[grouped.length - 1] = mergeToolEntries(lastEntry, entry);
       continue;
     }
 

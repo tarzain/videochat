@@ -252,6 +252,7 @@ export function LiveChat() {
                   className="h-11 w-11 rounded-full border-[var(--call-border)] bg-[var(--call-button-neutral)] p-0 text-[var(--call-fg)] shadow-none hover:bg-[var(--call-button-neutral-hover)]"
                   onClick={() => setHistoryDrawerOpen((current) => !current)}
                   size="icon"
+                  title={historyDrawerOpen ? "Hide chat history" : "Open chat history"}
                   type="button"
                   variant="outline"
                 >

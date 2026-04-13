@@ -12,6 +12,12 @@ import {
 } from "@/components/ai-elements/chain-of-thought";
 import { CodeBlock } from "@/components/ai-elements/code-block";
 import {
+  Conversation,
+  ConversationContent,
+  ConversationEmptyState,
+  ConversationScrollButton,
+} from "@/components/ai-elements/conversation";
+import {
   PromptInput,
   PromptInputBody,
   PromptInputFooter,
@@ -21,7 +27,6 @@ import {
 import { Suggestion, Suggestions } from "@/components/ai-elements/suggestion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { GeminiLiveClient } from "@/lib/live-client";
 import { cn } from "@/lib/utils";
 import type {
@@ -448,14 +453,14 @@ export function LiveChat() {
               </Button>
             </div>
 
-            <ScrollArea className="min-h-0 flex-1">
-              <div className="min-w-0 space-y-4 overflow-x-hidden p-4 [&_code]:break-words [&_pre]:break-words [&_pre]:whitespace-pre-wrap">
+            <Conversation className="min-h-0 flex-1">
+              <ConversationContent className="min-w-0 gap-4 overflow-x-hidden p-4 [&_code]:break-words [&_pre]:break-words [&_pre]:whitespace-pre-wrap">
                 {historyEntries.length === 0 ? (
-                  <div className="rounded-3xl border border-dashed border-[var(--call-border)] bg-[var(--call-history-empty)] p-5 text-sm leading-6 text-[var(--call-fg-muted)]">
-                    Connect the session to start the call. Transcript and tool
-                    history will appear here while the main stage stays focused
-                    on the live experience.
-                  </div>
+                  <ConversationEmptyState
+                    className="rounded-3xl border border-dashed border-[var(--call-border)] bg-[var(--call-history-empty)] p-5 text-left text-sm leading-6 text-[var(--call-fg-muted)]"
+                    description="Transcript and tool history will appear here while the main stage stays focused on the live experience."
+                    title="Connect the session to start the call."
+                  />
                 ) : (
                   historyEntries.map((entry) => {
                     if (entry.tool) {
@@ -490,8 +495,11 @@ export function LiveChat() {
                     );
                   })
                 )}
-              </div>
-            </ScrollArea>
+              </ConversationContent>
+              <ConversationScrollButton
+                className="bottom-4 left-1/2 z-10 h-10 w-10 -translate-x-1/2 rounded-full border-[var(--call-border)] bg-[var(--call-panel)] text-[var(--call-fg)] shadow-none hover:bg-[var(--call-button-neutral-hover)]"
+              />
+            </Conversation>
 
             <div className="border-t border-[var(--call-border)] p-4">
               <PromptInput

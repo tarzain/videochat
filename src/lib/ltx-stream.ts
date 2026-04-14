@@ -13,7 +13,7 @@ const DEFAULT_LTX_STREAM_URL =
   "wss://tmalive--ltx-stream-diffusersltx2streamingengine-streaming-app.modal.run/ws/stream";
 const DEFAULT_TARGET_POSITION = 1.0;
 const DEFAULT_STREAM_PROMPT =
-  "Create a faithful looping motion pass for this single still image. Preserve composition, subject, and framing. Add subtle cinematic movement only.";
+  "Seamless continuous perfect loop, natural motion, movement, cinematic lighting, high quality, small objects idly animated, people walking, cars driving, boats moving, etc.";
 
 function parseIntegerValue(value: string | undefined, fallback: number): number {
   const parsed = Number.parseInt(value ?? "", 10);
@@ -42,10 +42,10 @@ export const LTX_STREAM_SETTINGS = {
   width: parseIntegerValue(process.env.NEXT_PUBLIC_LTX_STREAM_WIDTH, 768),
   height: parseIntegerValue(process.env.NEXT_PUBLIC_LTX_STREAM_HEIGHT, 768),
   frameRate: parseIntegerValue(process.env.NEXT_PUBLIC_LTX_STREAM_FRAME_RATE, 24),
-  numFrames: parseIntegerValue(process.env.NEXT_PUBLIC_LTX_STREAM_NUM_FRAMES, 49),
+  numFrames: parseIntegerValue(process.env.NEXT_PUBLIC_LTX_STREAM_NUM_FRAMES, 33),
   maxSegments: parseIntegerValue(process.env.NEXT_PUBLIC_LTX_STREAM_MAX_SEGMENTS, 9999),
   loopyStrategy:
-    process.env.NEXT_PUBLIC_LTX_STREAM_LOOPY_STRATEGY || "anchor_loop",
+    process.env.NEXT_PUBLIC_LTX_STREAM_LOOPY_STRATEGY || "mirror",
   position: DEFAULT_TARGET_POSITION,
   prompt: process.env.NEXT_PUBLIC_LTX_STREAM_PROMPT || DEFAULT_STREAM_PROMPT,
 } as const;

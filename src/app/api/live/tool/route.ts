@@ -48,12 +48,14 @@ async function getGenerateImageResult(request: ToolCallRequest) {
       ? (request.args as {
           contents?: unknown;
           useCurrentCameraImage?: unknown;
+          useLatestGeneratedImage?: unknown;
           applyStylePrefix?: unknown;
         })
       : {};
   const contents =
     typeof parsedArgs.contents === "string" ? parsedArgs.contents.trim() : "";
   const useCurrentCameraImage = parsedArgs.useCurrentCameraImage === true;
+  const useLatestGeneratedImage = parsedArgs.useLatestGeneratedImage === true;
   const applyStylePrefix = parsedArgs.applyStylePrefix !== false;
 
   if (!contents) {
@@ -66,10 +68,17 @@ async function getGenerateImageResult(request: ToolCallRequest) {
     );
   }
 
+  if (useLatestGeneratedImage && !request.referenceImageUrl) {
+    throw new Error(
+      "generate_image requested the latest generated image, but no prior generated image was available.",
+    );
+  }
+
   return generateFluxImage({
     contents,
     cameraSnapshot: request.cameraSnapshot,
     useCurrentCameraImage,
+    referenceImageUrl: useLatestGeneratedImage ? request.referenceImageUrl : undefined,
     applyStylePrefix,
   });
 }

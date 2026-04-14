@@ -29,6 +29,7 @@ export interface GenerateImageResult {
   prompt: string;
   seed?: number;
   usedCameraImage: boolean;
+  usedGeneratedImage: boolean;
   usedStylePrefix: boolean;
 }
 
@@ -55,6 +56,7 @@ export interface ToolCallRequest {
   args: unknown;
   callId: string;
   cameraSnapshot?: CameraSnapshotPayload;
+  referenceImageUrl?: string;
 }
 
 export interface ToolCallResponse {

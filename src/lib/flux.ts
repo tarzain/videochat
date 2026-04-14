@@ -76,6 +76,7 @@ function createFluxInput(params: {
   contents: string;
   cameraSnapshot?: CameraSnapshotPayload;
   useCurrentCameraImage?: boolean;
+  referenceImageUrl?: string;
   applyStylePrefix?: boolean;
 }) {
   return async () => {
@@ -83,10 +84,12 @@ function createFluxInput(params: {
     const prompt = applyStylePrefix
       ? `${FLUX_STYLE_PREFIX}${params.contents.trim()}`
       : params.contents.trim();
-    const referenceImageUrl =
+    const uploadedCameraReferenceImageUrl =
       params.useCurrentCameraImage && params.cameraSnapshot
         ? await uploadCameraSnapshot(params.cameraSnapshot)
         : undefined;
+    const referenceImageUrl =
+      uploadedCameraReferenceImageUrl ?? params.referenceImageUrl;
     const endpoint = referenceImageUrl ? FLUX_EDIT_ENDPOINT : FLUX_TEXT_ENDPOINT;
 
     return {
@@ -107,7 +110,8 @@ function createFluxInput(params: {
         output_format: "jpeg" as const,
         ...(referenceImageUrl ? { image_urls: [referenceImageUrl] } : {}),
       },
-      usedCameraImage: Boolean(referenceImageUrl),
+      usedCameraImage: Boolean(uploadedCameraReferenceImageUrl),
+      usedGeneratedImage: Boolean(!uploadedCameraReferenceImageUrl && params.referenceImageUrl),
       usedStylePrefix: applyStylePrefix,
     };
   };
@@ -187,6 +191,7 @@ export async function streamFluxImage(
     contents: string;
     cameraSnapshot?: CameraSnapshotPayload;
     useCurrentCameraImage?: boolean;
+    referenceImageUrl?: string;
     applyStylePrefix?: boolean;
   },
   onEvent: (event: FluxStreamEvent) => Promise<void> | void,
@@ -194,13 +199,15 @@ export async function streamFluxImage(
   ensureFalConfigured();
 
   const resolveInput = createFluxInput(params);
-  const { endpoint, input, prompt, usedCameraImage, usedStylePrefix } =
+  const { endpoint, input, prompt, usedCameraImage, usedGeneratedImage, usedStylePrefix } =
     await resolveInput();
 
   await onEvent({
     type: "started",
     message: usedCameraImage
       ? "Starting Flux image generation with the current camera reference."
+      : usedGeneratedImage
+        ? "Starting Flux image generation with the latest generated image as reference."
       : usedStylePrefix
         ? "Starting stylized Flux image generation."
         : "Starting faithful Flux image generation.",
@@ -247,6 +254,7 @@ export async function streamFluxImage(
     prompt: output.prompt || prompt,
     seed: output.seed,
     usedCameraImage,
+    usedGeneratedImage,
     usedStylePrefix,
   };
 
@@ -262,6 +270,7 @@ export async function generateFluxImage(params: {
   contents: string;
   cameraSnapshot?: CameraSnapshotPayload;
   useCurrentCameraImage?: boolean;
+  referenceImageUrl?: string;
   applyStylePrefix?: boolean;
 }): Promise<GenerateImageResult> {
   let finalResult: GenerateImageResult | null = null;

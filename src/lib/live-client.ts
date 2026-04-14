@@ -93,6 +93,7 @@ function sanitizeToolResultForModel(
     status: "completed",
     prompt: result.prompt,
     usedCameraImage: result.usedCameraImage,
+    usedGeneratedImage: result.usedGeneratedImage,
     usedStylePrefix: result.usedStylePrefix,
     seed: result.seed,
     imageReady: true,
@@ -185,6 +186,8 @@ export class GeminiLiveClient {
   private cameraEnabled = false;
 
   private disconnecting = false;
+
+  private latestGeneratedImageUrl: string | null = null;
 
   constructor(handlers: LiveClientHandlers) {
     this.handlers = handlers;
@@ -408,6 +411,11 @@ export class GeminiLiveClient {
           functionCall.args?.useCurrentCameraImage === true
             ? await this.getCurrentCameraSnapshot()
             : undefined,
+        referenceImageUrl:
+          name === "generate_image" &&
+          functionCall.args?.useLatestGeneratedImage === true
+            ? this.latestGeneratedImageUrl ?? undefined
+            : undefined,
       };
 
       this.handlers.onTranscriptEntry(
@@ -468,6 +476,10 @@ export class GeminiLiveClient {
           },
         ),
       );
+
+      if (isGenerateImageResult(payload.result)) {
+        this.latestGeneratedImageUrl = payload.result.imageUrl;
+      }
     }
 
     this.session.sendToolResponse({

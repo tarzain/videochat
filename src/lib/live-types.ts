@@ -80,3 +80,32 @@ export interface LivePermissionsState {
   microphone: "unknown" | "granted" | "denied";
   camera: "unknown" | "granted" | "denied";
 }
+
+export type StreamStatus =
+  | "disconnected"
+  | "connecting"
+  | "waiting_for_first_chunk"
+  | "playing"
+  | "degraded_to_image";
+
+export type StreamMediaSurfaceMode = "image" | "stream";
+
+export interface StreamTarget {
+  key: string;
+  imageDataUrl: string;
+  prompt: string;
+  width: number;
+  height: number;
+  frameRate: number;
+  numFrames: number;
+  maxSegments: number;
+  loopyStrategy: string;
+  position?: number;
+}
+
+export interface StreamSessionState {
+  status: StreamStatus;
+  error: string;
+  hasPlayableVideo: boolean;
+  mediaSurfaceMode: StreamMediaSurfaceMode;
+}

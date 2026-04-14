@@ -28,10 +28,12 @@ import { Suggestion, Suggestions } from "@/components/ai-elements/suggestion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { GeminiLiveClient } from "@/lib/live-client";
+import { LTX_STREAM_SETTINGS, useLtxStreamSession } from "@/lib/ltx-stream";
 import { cn } from "@/lib/utils";
 import type {
   LivePermissionsState,
   LiveSessionStatus,
+  StreamTarget,
   TranscriptEntry,
 } from "@/lib/live-types";
 import type { ChatStatus } from "ai";
@@ -41,6 +43,9 @@ import {
   MessageSquareIcon,
   MicIcon,
   MicOffIcon,
+  MonitorPlay,
+  MonitorUp,
+  MonitorX,
   PhoneIcon,
   PhoneOffIcon,
   VideoIcon,
@@ -76,6 +81,7 @@ type AiStageVisual =
 
 export function LiveChat() {
   const clientRef = useRef<GeminiLiveClient | null>(null);
+  const streamPresentationEnabledRef = useRef(false);
   const [status, setStatus] = useState<LiveSessionStatus>("disconnected");
   const [permissions, setPermissions] =
     useState<LivePermissionsState>(INITIAL_PERMISSIONS);
@@ -84,9 +90,17 @@ export function LiveChat() {
   const [microphoneEnabled, setMicrophoneEnabled] = useState(true);
   const [cameraEnabled, setCameraEnabled] = useState(false);
   const [historyDrawerOpen, setHistoryDrawerOpen] = useState(false);
+  const [streamPresentationEnabled, setStreamPresentationEnabled] = useState(false);
+  const [selectedStageEntryId, setSelectedStageEntryId] = useState<string | null>(null);
   const [userPreviewStream, setUserPreviewStream] = useState<MediaStream | null>(
     null,
   );
+  const [preparedStageStreamTarget, setPreparedStageStreamTarget] =
+    useState<StreamTarget | null>(null);
+
+  useEffect(() => {
+    streamPresentationEnabledRef.current = streamPresentationEnabled;
+  }, [streamPresentationEnabled]);
 
   useEffect(() => {
     const client = new GeminiLiveClient({
@@ -95,6 +109,14 @@ export function LiveChat() {
       },
       onTranscriptEntry: (entry) => {
         setTranscript((current) => [...current, entry].slice(-180));
+
+        if (
+          streamPresentationEnabledRef.current &&
+          entry.tool?.imageUrl &&
+          isFinalGenerateImageEntry(entry)
+        ) {
+          setSelectedStageEntryId(entry.id);
+        }
       },
       onPermissionsChange: (nextPermissions) => {
         setPermissions(nextPermissions);
@@ -121,23 +143,43 @@ export function LiveChat() {
         ? "submitted"
         : "ready";
 
-  const stageVisual = useMemo<AiStageVisual>(() => {
-    const latestImageEntry = [...transcript]
-      .reverse()
-      .find((entry) => entry.tool?.imageUrl);
+  const latestFinalImageEntry = useMemo(
+    () =>
+      [...transcript]
+        .reverse()
+        .find((entry) => entry.tool?.imageUrl && isFinalGenerateImageEntry(entry)) ?? null,
+    [transcript],
+  );
 
-    if (latestImageEntry?.tool?.imageUrl) {
+  const latestImageEntry = useMemo(
+    () => [...transcript].reverse().find((entry) => entry.tool?.imageUrl) ?? null,
+    [transcript],
+  );
+
+  const selectedStageEntry = useMemo(
+    () =>
+      selectedStageEntryId
+        ? transcript.find((entry) => entry.id === selectedStageEntryId) ?? null
+        : null,
+    [selectedStageEntryId, transcript],
+  );
+
+  const stageDisplayEntry =
+    streamPresentationEnabled && selectedStageEntry ? selectedStageEntry : latestImageEntry;
+
+  const stageVisual = useMemo<AiStageVisual>(() => {
+    if (stageDisplayEntry?.tool?.imageUrl) {
       const outputStatus =
         Boolean(
-          latestImageEntry.tool.output &&
-            typeof latestImageEntry.tool.output === "object" &&
-            "status" in latestImageEntry.tool.output &&
-            latestImageEntry.tool.output.status === "preview",
+          stageDisplayEntry.tool.output &&
+            typeof stageDisplayEntry.tool.output === "object" &&
+            "status" in stageDisplayEntry.tool.output &&
+            stageDisplayEntry.tool.output.status === "preview",
         );
 
       return {
         kind: "image",
-        imageUrl: latestImageEntry.tool.imageUrl,
+        imageUrl: stageDisplayEntry.tool.imageUrl,
         isPreview: outputStatus,
         title: outputStatus ? "vidi is presenting" : "vidi presented",
         subtitle: outputStatus
@@ -159,7 +201,84 @@ export function LiveChat() {
       title: connected ? "vidi is live" : "vidi camera is off",
       subtitle: imageStatusEntry?.text ?? "Waiting to speak or present something visual.",
     };
-  }, [connected, transcript]);
+  }, [connected, stageDisplayEntry, transcript]);
+
+  const streamSourceEntry = selectedStageEntry;
+
+  const canEnableStageStream = Boolean(selectedStageEntry ?? latestFinalImageEntry);
+  const desiredStageStreamTarget = useMemo(() => {
+    return streamSourceEntry ? buildDesiredStageStreamTarget(streamSourceEntry) : null;
+  }, [streamSourceEntry]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const prepare = async () => {
+      if (!streamPresentationEnabled || !desiredStageStreamTarget?.imageUrl) {
+        setPreparedStageStreamTarget(null);
+        return;
+      }
+
+      try {
+        const imageDataUrl = await imageUrlToDataUrl(desiredStageStreamTarget.imageUrl);
+
+        if (cancelled) {
+          return;
+        }
+
+        setPreparedStageStreamTarget({
+          key: desiredStageStreamTarget.key,
+          imageDataUrl,
+          prompt: desiredStageStreamTarget.prompt,
+          width: desiredStageStreamTarget.width,
+          height: desiredStageStreamTarget.height,
+          frameRate: desiredStageStreamTarget.frameRate,
+          numFrames: desiredStageStreamTarget.numFrames,
+          maxSegments: desiredStageStreamTarget.maxSegments,
+          loopyStrategy: desiredStageStreamTarget.loopyStrategy,
+          position: desiredStageStreamTarget.position,
+        });
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        console.error("[videochat] Unable to prepare stream image:", error);
+        setPreparedStageStreamTarget(null);
+      }
+    };
+
+    void prepare();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    streamPresentationEnabled,
+    desiredStageStreamTarget?.key,
+    desiredStageStreamTarget?.prompt,
+    desiredStageStreamTarget?.imageUrl,
+    desiredStageStreamTarget?.width,
+    desiredStageStreamTarget?.height,
+    desiredStageStreamTarget?.frameRate,
+    desiredStageStreamTarget?.numFrames,
+    desiredStageStreamTarget?.maxSegments,
+    desiredStageStreamTarget?.loopyStrategy,
+    desiredStageStreamTarget?.position,
+  ]);
+
+  const {
+    disconnect: disconnectStageStream,
+    status: stageStreamStatus,
+    mediaSurfaceMode: stageMediaSurfaceMode,
+    videoRef: stageStreamVideoRef,
+  } = useLtxStreamSession({
+    enabled:
+      LTX_STREAM_SETTINGS.enabled &&
+      streamPresentationEnabled &&
+      canEnableStageStream,
+    target: preparedStageStreamTarget,
+  });
 
   const historyEntries = useMemo(() => groupTranscriptEntries(transcript), [transcript]);
 
@@ -169,6 +288,32 @@ export function LiveChat() {
       .find((entry) => entry.role === "model" && entry.kind === "text")
       ?.text;
   }, [historyEntries]);
+
+  const shouldMountStageVideo =
+    stageVisual.kind === "image" && !stageVisual.isPreview && canEnableStageStream;
+  const stageVideoVisible =
+    shouldMountStageVideo &&
+    streamPresentationEnabled &&
+    stageMediaSurfaceMode === "stream";
+  const stageImageVisible = stageVisual.kind === "image" && !stageVideoVisible;
+  const stageStreamToggleState =
+    stageStreamStatus === "connecting" || stageStreamStatus === "waiting_for_first_chunk"
+      ? "loading"
+      : streamPresentationEnabled && stageStreamStatus === "playing" && stageVideoVisible
+        ? "on"
+        : "off";
+  const stageStreamToggleLabel =
+    stageStreamToggleState === "loading"
+      ? "Connecting to Live Video Stream"
+      : stageStreamToggleState === "on"
+        ? "Disconnect from Live Video Stream"
+        : "Connect to Live Video Stream";
+  const StageStreamToggleIcon =
+    stageStreamToggleState === "loading"
+      ? MonitorUp
+      : stageStreamToggleState === "on"
+        ? MonitorX
+        : MonitorPlay;
 
   const connect = async () => {
     await clientRef.current?.connect();
@@ -234,6 +379,22 @@ export function LiveChat() {
     await clientRef.current?.setCameraEnabled(nextValue);
   };
 
+  const toggleStageStream = () => {
+    if (!canEnableStageStream) {
+      return;
+    }
+
+    if (streamPresentationEnabled || stageStreamToggleState === "loading") {
+      disconnectStageStream();
+      setPreparedStageStreamTarget(null);
+      setStreamPresentationEnabled(false);
+      return;
+    }
+
+    setSelectedStageEntryId(latestFinalImageEntry?.id ?? null);
+    setStreamPresentationEnabled(true);
+  };
+
   return (
     <main className="h-screen overflow-hidden bg-[var(--call-shell-bg)] text-[var(--call-fg)]">
       <section className="flex h-full w-full flex-col overflow-hidden">
@@ -271,17 +432,54 @@ export function LiveChat() {
               {stageVisual.kind === "image" ? (
                 <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[20px] border border-[var(--call-border)] bg-[var(--call-panel)]">
                   <div className="relative z-10 flex items-center justify-start px-4 py-4 md:px-5">
-                    <div className="flex items-center gap-2 rounded-full bg-[var(--call-chip-bg)] px-3 py-1.5 text-sm text-[var(--call-chip-fg)]">
-                      <ImageIcon className="size-4" />
-                      {stageVisual.isPreview ? "vidi preview" : "vidi presenting"}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="flex items-center gap-2 rounded-full bg-[var(--call-chip-bg)] px-3 py-1.5 text-sm text-[var(--call-chip-fg)]">
+                        <ImageIcon className="size-4" />
+                        {stageVisual.isPreview ? "vidi preview" : "vidi presenting"}
+                      </div>
+                      {!stageVisual.isPreview ? (
+                        <Button
+                          className="h-9 rounded-full border-[var(--call-border)] bg-[var(--call-button-neutral)] px-3 text-[var(--call-fg)] shadow-none hover:bg-[var(--call-button-neutral-hover)]"
+                          disabled={!canEnableStageStream}
+                          aria-label={stageStreamToggleLabel}
+                          onClick={toggleStageStream}
+                          type="button"
+                          variant="outline"
+                        >
+                          <StageStreamToggleIcon className="mr-2 size-4" />
+                          {stageStreamToggleLabel}
+                        </Button>
+                      ) : null}
                     </div>
                   </div>
                   <div className="flex min-h-0 flex-1 items-center justify-center p-4 md:p-8">
-                    <img
-                      alt="vidi presentation"
-                      className="h-full max-h-full w-full max-w-full rounded-[12px] object-contain"
-                      src={stageVisual.imageUrl}
-                    />
+                    {shouldMountStageVideo ? (
+                      <div className="relative flex h-full max-h-full w-full max-w-full items-center justify-center">
+                        <video
+                          className={cn(
+                            "absolute inset-0 h-full w-full rounded-[12px] object-contain transition-opacity duration-300",
+                            stageVideoVisible ? "opacity-100" : "pointer-events-none opacity-0",
+                          )}
+                          muted
+                          playsInline
+                          ref={stageStreamVideoRef}
+                        />
+                        <img
+                          alt="vidi presentation"
+                          className={cn(
+                            "h-full max-h-full w-full max-w-full rounded-[12px] object-contain transition-opacity duration-300",
+                            stageImageVisible ? "opacity-100" : "pointer-events-none opacity-0",
+                          )}
+                          src={stageVisual.imageUrl}
+                        />
+                      </div>
+                    ) : (
+                      <img
+                        alt="vidi presentation"
+                        className="h-full max-h-full w-full max-w-full rounded-[12px] object-contain"
+                        src={stageVisual.imageUrl}
+                      />
+                    )}
                   </div>
                 </div>
               ) : (
@@ -771,6 +969,15 @@ function isPreviewToolEntry(entry: TranscriptEntry): boolean {
   );
 }
 
+function isFinalGenerateImageEntry(entry: TranscriptEntry): boolean {
+  return Boolean(
+    entry.tool?.name === "generate_image" &&
+      entry.tool.imageUrl &&
+      entry.tool.state === "output-available" &&
+      !isPreviewToolEntry(entry),
+  );
+}
+
 function formatToolName(name: string): string {
   return name.replace(/[_-]+/g, " ").trim();
 }
@@ -897,6 +1104,53 @@ function mergeTurnText(previous: string, next: string): string {
   }
 
   return `${trimmedPrevious}\n\n${trimmedNext}`;
+}
+
+async function imageUrlToDataUrl(imageUrl: string): Promise<string> {
+  const response = await fetch(imageUrl);
+
+  if (!response.ok) {
+    throw new Error(`Image fetch failed with status ${response.status}.`);
+  }
+
+  const blob = await response.blob();
+
+  return await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onerror = () => {
+      reject(reader.error ?? new Error("Unable to read image data."));
+    };
+
+    reader.onloadend = () => {
+      if (typeof reader.result === "string") {
+        resolve(reader.result);
+        return;
+      }
+
+      reject(new Error("Image data URL conversion failed."));
+    };
+
+    reader.readAsDataURL(blob);
+  });
+}
+
+function buildDesiredStageStreamTarget(
+  entry: TranscriptEntry,
+): StreamTarget & { imageUrl: string } {
+  return {
+    key: entry.id,
+    imageDataUrl: "",
+    imageUrl: entry.tool?.imageUrl ?? "",
+    prompt: LTX_STREAM_SETTINGS.prompt,
+    width: LTX_STREAM_SETTINGS.width,
+    height: LTX_STREAM_SETTINGS.height,
+    frameRate: LTX_STREAM_SETTINGS.frameRate,
+    numFrames: LTX_STREAM_SETTINGS.numFrames,
+    maxSegments: LTX_STREAM_SETTINGS.maxSegments,
+    loopyStrategy: LTX_STREAM_SETTINGS.loopyStrategy,
+    position: LTX_STREAM_SETTINGS.position,
+  };
 }
 
 function canMergeTextEntries(previous: TranscriptEntry, next: TranscriptEntry): boolean {

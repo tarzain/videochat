@@ -31,6 +31,8 @@ export interface GenerateImageResult {
   usedCameraImage: boolean;
   usedGeneratedImage: boolean;
   usedStylePrefix: boolean;
+  imageModel?: string;
+  imageModelPreset?: "nano-banana" | "flux";
 }
 
 export interface TranscriptToolData {

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { generateFluxImage } from "@/lib/flux";
+import { generateImage } from "@/lib/image-generation";
 import type { ToolCallRequest, ToolCallResponse } from "@/lib/live-types";
 
 export const runtime = "nodejs";
@@ -74,7 +74,7 @@ async function getGenerateImageResult(request: ToolCallRequest) {
     );
   }
 
-  return generateFluxImage({
+  return generateImage({
     contents,
     cameraSnapshot: request.cameraSnapshot,
     useCurrentCameraImage,

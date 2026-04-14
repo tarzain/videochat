@@ -1,4 +1,4 @@
-import { streamFluxImage } from "@/lib/flux";
+import { streamGeneratedImage } from "@/lib/image-generation";
 import type { ToolCallRequest } from "@/lib/live-types";
 
 export const runtime = "nodejs";
@@ -106,7 +106,7 @@ export async function POST(request: Request) {
 
       void (async () => {
         try {
-          await streamFluxImage(params, async (event) => {
+          await streamGeneratedImage(params, async (event) => {
             if (event.type === "preview") {
               send({
                 type: "preview",

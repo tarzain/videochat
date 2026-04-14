@@ -411,10 +411,12 @@ export class GeminiLiveClient {
           functionCall.args?.useCurrentCameraImage === true
             ? await this.getCurrentCameraSnapshot()
             : undefined,
-        referenceImageUrl:
+        referenceImageUrls:
           name === "generate_image" &&
           functionCall.args?.useLatestGeneratedImage === true
-            ? this.latestGeneratedImageUrl ?? undefined
+            ? this.latestGeneratedImageUrl
+              ? [this.latestGeneratedImageUrl]
+              : undefined
             : undefined,
       };
 

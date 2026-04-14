@@ -76,7 +76,7 @@ function createFluxInput(params: {
   contents: string;
   cameraSnapshot?: CameraSnapshotPayload;
   useCurrentCameraImage?: boolean;
-  referenceImageUrl?: string;
+  referenceImageUrls?: string[];
   applyStylePrefix?: boolean;
 }) {
   return async () => {
@@ -88,9 +88,11 @@ function createFluxInput(params: {
       params.useCurrentCameraImage && params.cameraSnapshot
         ? await uploadCameraSnapshot(params.cameraSnapshot)
         : undefined;
-    const referenceImageUrl =
-      uploadedCameraReferenceImageUrl ?? params.referenceImageUrl;
-    const endpoint = referenceImageUrl ? FLUX_EDIT_ENDPOINT : FLUX_TEXT_ENDPOINT;
+    const referenceImageUrls = [
+      ...(uploadedCameraReferenceImageUrl ? [uploadedCameraReferenceImageUrl] : []),
+      ...(params.referenceImageUrls ?? []),
+    ];
+    const endpoint = referenceImageUrls.length > 0 ? FLUX_EDIT_ENDPOINT : FLUX_TEXT_ENDPOINT;
 
     return {
       endpoint,
@@ -108,10 +110,10 @@ function createFluxInput(params: {
         sync_mode: true,
         enable_safety_checker: true,
         output_format: "jpeg" as const,
-        ...(referenceImageUrl ? { image_urls: [referenceImageUrl] } : {}),
+        ...(referenceImageUrls.length > 0 ? { image_urls: referenceImageUrls } : {}),
       },
       usedCameraImage: Boolean(uploadedCameraReferenceImageUrl),
-      usedGeneratedImage: Boolean(!uploadedCameraReferenceImageUrl && params.referenceImageUrl),
+      usedGeneratedImage: Boolean((params.referenceImageUrls?.length ?? 0) > 0),
       usedStylePrefix: applyStylePrefix,
     };
   };
@@ -191,7 +193,7 @@ export async function streamFluxImage(
     contents: string;
     cameraSnapshot?: CameraSnapshotPayload;
     useCurrentCameraImage?: boolean;
-    referenceImageUrl?: string;
+    referenceImageUrls?: string[];
     applyStylePrefix?: boolean;
   },
   onEvent: (event: FluxStreamEvent) => Promise<void> | void,
@@ -270,7 +272,7 @@ export async function generateFluxImage(params: {
   contents: string;
   cameraSnapshot?: CameraSnapshotPayload;
   useCurrentCameraImage?: boolean;
-  referenceImageUrl?: string;
+  referenceImageUrls?: string[];
   applyStylePrefix?: boolean;
 }): Promise<GenerateImageResult> {
   let finalResult: GenerateImageResult | null = null;

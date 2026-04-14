@@ -43,7 +43,7 @@ function parseGenerateImageRequest(request: ToolCallRequest) {
     );
   }
 
-  if (useLatestGeneratedImage && !request.referenceImageUrl) {
+  if (useLatestGeneratedImage && !(request.referenceImageUrls?.length)) {
     throw new Error(
       "generate_image requested the latest generated image, but no prior generated image was available.",
     );
@@ -52,7 +52,7 @@ function parseGenerateImageRequest(request: ToolCallRequest) {
   return {
     contents,
     useCurrentCameraImage,
-    referenceImageUrl: useLatestGeneratedImage ? request.referenceImageUrl : undefined,
+    referenceImageUrls: useLatestGeneratedImage ? request.referenceImageUrls : undefined,
     applyStylePrefix,
     cameraSnapshot: request.cameraSnapshot,
   };

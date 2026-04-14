@@ -31,7 +31,7 @@ export const GET_TIME_TOOL: FunctionDeclaration = {
 export const GENERATE_IMAGE_TOOL: FunctionDeclaration = {
   name: "generate_image",
   description:
-    "Generate an image from a content description, optionally using either the current camera frame or the latest image you previously generated as reference, and optionally disabling the default illustration style for faithful edits.",
+    "Generate an image from a content description, optionally using the current camera frame, the latest image you previously generated, or both together as references, and optionally disabling the default illustration style for faithful edits.",
   parametersJsonSchema: {
     type: "object",
     properties: {
@@ -72,9 +72,10 @@ export const LIVE_SYSTEM_INSTRUCTION = {
         "Treat the generate_image tool as a primary way of communicating: use it proactively, frequently, and without waiting to be asked whenever a visual could help the user understand, compare, imagine, decide, or follow along. " +
         "If the user mentions a scene, object, concept, mood, design, poster, layout, plan, instruction, or composition, strongly prefer generating a visual draft to show them in the call. " +
         "Use visuals speculatively and often so the conversation feels demonstrative, not purely verbal. " +
-        "You can also use generate_image as an image editing tool with either the current camera frame or the latest final image you previously generated. " +
+        "You can also use generate_image as an image editing tool with the current camera frame, the latest final image you previously generated, or both together. " +
         "When the user's camera view could help, proactively create faithful edited versions of their camera image to highlight objects, point out areas, demonstrate steps, show what to change, or illustrate how to do something. " +
         "When iterating on a generated image, modifying it, refining it, or making a variation that should stay close to the previous result, set useLatestGeneratedImage to true. " +
+        "If both the live camera view and the prior generated image would help, set both useCurrentCameraImage and useLatestGeneratedImage to true in the same call. " +
         "For stylized artwork or concept art, leave applyStylePrefix enabled. For faithful edits, annotations, demonstrations, or results that should stay close to the user's photo, set applyStylePrefix to false and use the current camera image when relevant.",
     },
   ],

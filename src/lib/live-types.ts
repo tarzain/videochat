@@ -56,7 +56,7 @@ export interface ToolCallRequest {
   args: unknown;
   callId: string;
   cameraSnapshot?: CameraSnapshotPayload;
-  referenceImageUrl?: string;
+  referenceImageUrls?: string[];
 }
 
 export interface ToolCallResponse {

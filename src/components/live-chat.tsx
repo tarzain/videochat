@@ -49,10 +49,12 @@ import {
   MonitorX,
   PhoneIcon,
   PhoneOffIcon,
+  SnailIcon,
   VideoIcon,
   VideoOffIcon,
   WrenchIcon,
   XIcon,
+  ZapIcon,
 } from "lucide-react";
 
 const INITIAL_PERMISSIONS: LivePermissionsState = {
@@ -641,10 +643,7 @@ export function LiveChat() {
                           : "Switch image generation to Draft mode"
                       }
                       className={cn(
-                        "h-12 rounded-full border-0 px-4 text-sm font-medium shadow-none",
-                        imageModelPreset === "flux"
-                          ? "bg-[var(--call-button-neutral)] text-[var(--call-fg)] hover:bg-[var(--call-button-neutral-hover)]"
-                          : "bg-[var(--call-button-active)] text-[var(--primary-foreground)] hover:bg-[var(--call-button-active-hover)]",
+                        "h-12 gap-1 rounded-full border-0 bg-[var(--call-button-neutral)] px-1.5 text-sm font-medium text-[var(--call-fg)] shadow-none hover:bg-[var(--call-button-neutral-hover)]",
                       )}
                       onClick={toggleImageModelPreset}
                       title={
@@ -654,7 +653,28 @@ export function LiveChat() {
                       }
                       type="button"
                     >
-                      {imageModelPreset === "flux" ? "Draft" : "HQ"}
+                      <span
+                        className={cn(
+                          "flex h-9 items-center gap-1.5 rounded-full px-3 transition-colors",
+                          imageModelPreset === "flux"
+                            ? "bg-[var(--call-button-active)] text-[var(--primary-foreground)]"
+                            : "text-[var(--call-fg-muted)]",
+                        )}
+                      >
+                        <ZapIcon className="size-4" />
+                        Draft
+                      </span>
+                      <span
+                        className={cn(
+                          "flex h-9 items-center gap-1.5 rounded-full px-3 transition-colors",
+                          imageModelPreset === "nano-banana"
+                            ? "bg-[var(--call-button-active)] text-[var(--primary-foreground)]"
+                            : "text-[var(--call-fg-muted)]",
+                        )}
+                      >
+                        <SnailIcon className="size-4" />
+                        HQ
+                      </span>
                     </Button>
                   </div>
                 </div>

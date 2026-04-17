@@ -27,6 +27,7 @@ export interface CameraSnapshotPayload {
 export interface GenerateImageResult {
   imageUrl: string;
   prompt: string;
+  animationPrompt?: string;
   seed?: number;
   usedCameraImage: boolean;
   usedGeneratedImage: boolean;

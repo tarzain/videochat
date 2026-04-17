@@ -12,6 +12,7 @@ const DEFAULT_IMAGE_MODEL_PRESET = "flux";
 const DEFAULT_FAL_MODEL_ID = "fal-ai/nano-banana-2/edit";
 const DEFAULT_FAL_TEXT_MODEL_ID = "fal-ai/nano-banana-2";
 const DEFAULT_FAL_TURBO_MODEL_ID = "fal-ai/flux-2";
+const DEFAULT_FLUX_EDIT_MODEL_ID = "fal-ai/flux-2/edit";
 const SQUARE_ASPECT_RATIO = "1:1";
 const FLUX_IMAGE_SIZE = 1024;
 
@@ -79,8 +80,8 @@ function getImageGenerationSettings(presetOverride?: ImageModelPreset) {
     fluxModelId:
       process.env.FAL_TURBO_MODEL_ID ||
       process.env.FLUX_TEXT_MODEL_ID ||
-      process.env.FLUX_EDIT_MODEL_ID ||
       DEFAULT_FAL_TURBO_MODEL_ID,
+    fluxEditModelId: process.env.FLUX_EDIT_MODEL_ID || DEFAULT_FLUX_EDIT_MODEL_ID,
   };
 }
 
@@ -223,6 +224,7 @@ async function resolveGenerationInput(params: {
   referenceImageUrls?: string[];
   applyStylePrefix?: boolean;
   imageModelPreset?: ImageModelPreset;
+  animationPrompt?: string;
 }) {
   const settings = getImageGenerationSettings(params.imageModelPreset);
   const usedStylePrefix = params.applyStylePrefix !== false;
@@ -245,6 +247,7 @@ async function resolveGenerationInput(params: {
     usedCameraImage,
     usedGeneratedImage,
     usedStylePrefix,
+    animationPrompt: params.animationPrompt?.trim() || undefined,
   };
 }
 
@@ -256,6 +259,7 @@ export async function streamGeneratedImage(
     referenceImageUrls?: string[];
     applyStylePrefix?: boolean;
     imageModelPreset?: ImageModelPreset;
+    animationPrompt?: string;
   },
   onEvent: (event: ImageGenerationStreamEvent) => Promise<void> | void,
 ): Promise<GenerateImageResult> {
@@ -268,6 +272,7 @@ export async function streamGeneratedImage(
     usedCameraImage,
     usedGeneratedImage,
     usedStylePrefix,
+    animationPrompt,
   } = await resolveGenerationInput(params);
 
   await onEvent({
@@ -281,7 +286,8 @@ export async function streamGeneratedImage(
   });
 
   if (settings.preset === "flux") {
-    const modelId = settings.fluxModelId;
+    const modelId =
+      referenceImageUrls.length > 0 ? settings.fluxEditModelId : settings.fluxModelId;
     const input = {
       prompt,
       guidance_scale: 2.5,
@@ -333,6 +339,7 @@ export async function streamGeneratedImage(
       usedCameraImage,
       usedGeneratedImage,
       usedStylePrefix,
+      animationPrompt,
       imageModel: modelId,
       imageModelPreset: settings.preset,
     };
@@ -372,6 +379,7 @@ export async function streamGeneratedImage(
     usedCameraImage,
     usedGeneratedImage,
     usedStylePrefix,
+    animationPrompt,
     imageModel: modelId,
     imageModelPreset: settings.preset,
   };
@@ -391,6 +399,7 @@ export async function generateImage(params: {
   referenceImageUrls?: string[];
   applyStylePrefix?: boolean;
   imageModelPreset?: ImageModelPreset;
+  animationPrompt?: string;
 }): Promise<GenerateImageResult> {
   let finalResult: GenerateImageResult | null = null;
 

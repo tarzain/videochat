@@ -55,6 +55,11 @@ export const GENERATE_IMAGE_TOOL: FunctionDeclaration = {
         description:
           "If true or omitted, apply the default illustrated poster style. Set false for faithful image edits or when the result should stay close to the source photo.",
       },
+      animationPrompt: {
+        type: "string",
+        description:
+          "Optional prompt for the live video animation stream to use when this image is presented. Describe only the desired motion, e.g. slow drifting clouds, flickering lanterns, subtle parallax, people walking, cars moving.",
+      },
     },
     additionalProperties: false,
     required: ["contents"],
@@ -73,6 +78,7 @@ export const LIVE_SYSTEM_INSTRUCTION = {
         "If the user mentions a scene, object, concept, mood, design, poster, layout, plan, instruction, or composition, strongly prefer generating a visual draft to show them in the call. " +
         "Use visuals speculatively and often so the conversation feels demonstrative, not purely verbal. " +
         "You can also use generate_image as an image editing tool with the current camera frame, the latest final image you previously generated, or both together. " +
+        "When generating or editing an image that will be shown on the live stage, include animationPrompt when a specific motion direction would make the looping video better. Keep animationPrompt concise and focused on motion only, not image composition. " +
         "When the user's camera view could help, proactively create faithful edited versions of their camera image to highlight objects, point out areas, demonstrate steps, show what to change, or illustrate how to do something. " +
         "When iterating on a generated image, modifying it, refining it, or making a variation that should stay close to the previous result, set useLatestGeneratedImage to true. " +
         "If both the live camera view and the prior generated image would help, set both useCurrentCameraImage and useLatestGeneratedImage to true in the same call. " +

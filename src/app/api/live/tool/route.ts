@@ -58,6 +58,7 @@ async function getGenerateImageResult(request: ToolCallRequest) {
           useCurrentCameraImage?: unknown;
           useLatestGeneratedImage?: unknown;
           applyStylePrefix?: unknown;
+          animationPrompt?: unknown;
         })
       : {};
   const contents =
@@ -89,6 +90,10 @@ async function getGenerateImageResult(request: ToolCallRequest) {
     referenceImageUrls: useLatestGeneratedImage ? request.referenceImageUrls : undefined,
     applyStylePrefix,
     imageModelPreset: parseImageModelPreset(request.imageModelPreset),
+    animationPrompt:
+      typeof parsedArgs.animationPrompt === "string"
+        ? parsedArgs.animationPrompt
+        : undefined,
   });
 }
 

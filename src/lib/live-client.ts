@@ -96,6 +96,7 @@ function sanitizeToolResultForModel(
     usedCameraImage: result.usedCameraImage,
     usedGeneratedImage: result.usedGeneratedImage,
     usedStylePrefix: result.usedStylePrefix,
+    animationPrompt: result.animationPrompt,
     imageModelPreset: result.imageModelPreset,
     seed: result.seed,
     imageReady: true,

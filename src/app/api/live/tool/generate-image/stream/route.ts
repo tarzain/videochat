@@ -29,6 +29,7 @@ function parseGenerateImageRequest(request: ToolCallRequest) {
           useCurrentCameraImage?: unknown;
           useLatestGeneratedImage?: unknown;
           applyStylePrefix?: unknown;
+          animationPrompt?: unknown;
         })
       : {};
   const contents =
@@ -60,6 +61,10 @@ function parseGenerateImageRequest(request: ToolCallRequest) {
     applyStylePrefix,
     cameraSnapshot: request.cameraSnapshot,
     imageModelPreset: parseImageModelPreset(request.imageModelPreset),
+    animationPrompt:
+      typeof parsedArgs.animationPrompt === "string"
+        ? parsedArgs.animationPrompt
+        : undefined,
   };
 }
 

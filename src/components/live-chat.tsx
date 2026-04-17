@@ -1196,7 +1196,7 @@ function buildDesiredStageStreamTarget(
     key: entry.id,
     imageDataUrl: "",
     imageUrl: entry.tool?.imageUrl ?? "",
-    prompt: LTX_STREAM_SETTINGS.prompt,
+    prompt: getGenerateImageAnimationPrompt(entry) ?? LTX_STREAM_SETTINGS.prompt,
     width: LTX_STREAM_SETTINGS.width,
     height: LTX_STREAM_SETTINGS.height,
     frameRate: LTX_STREAM_SETTINGS.frameRate,
@@ -1205,6 +1205,32 @@ function buildDesiredStageStreamTarget(
     loopyStrategy: LTX_STREAM_SETTINGS.loopyStrategy,
     position: LTX_STREAM_SETTINGS.position,
   };
+}
+
+function getGenerateImageAnimationPrompt(entry: TranscriptEntry): string | null {
+  const output = entry.tool?.output;
+  if (
+    output &&
+    typeof output === "object" &&
+    "animationPrompt" in output &&
+    typeof output.animationPrompt === "string" &&
+    output.animationPrompt.trim()
+  ) {
+    return output.animationPrompt.trim();
+  }
+
+  const input = entry.tool?.input;
+  if (
+    input &&
+    typeof input === "object" &&
+    "animationPrompt" in input &&
+    typeof input.animationPrompt === "string" &&
+    input.animationPrompt.trim()
+  ) {
+    return input.animationPrompt.trim();
+  }
+
+  return null;
 }
 
 function canMergeTextEntries(previous: TranscriptEntry, next: TranscriptEntry): boolean {

@@ -321,7 +321,6 @@ function buildStreamConfigFingerprint(target: StreamTarget | null): string {
     loopyStrategy: target.loopyStrategy,
     position:
       typeof target.position === "number" ? target.position : DEFAULT_TARGET_POSITION,
-    prompt: target.prompt,
   });
 }
 
@@ -333,6 +332,7 @@ function buildStreamTargetFingerprint(target: StreamTarget | null): string {
   return JSON.stringify({
     key: target.key,
     imageDataUrl: target.imageDataUrl,
+    prompt: target.prompt,
   });
 }
 
@@ -588,7 +588,7 @@ export function useLtxStreamSession({
     flushSegmentQueue(connectionId);
   };
 
-  const sendTargetUpdate = (nextTarget: StreamTarget) => {
+  const sendNextSegmentUpdate = (nextTarget: StreamTarget) => {
     const websocket = websocketRef.current;
 
     if (
@@ -602,8 +602,9 @@ export function useLtxStreamSession({
 
     websocket.send(
       JSON.stringify({
-        action: "set_target_image",
-        image: nextTarget.imageDataUrl,
+        action: "set_next_segment",
+        prompt: nextTarget.prompt,
+        target_image: nextTarget.imageDataUrl,
         position:
           typeof nextTarget.position === "number"
             ? nextTarget.position
@@ -816,7 +817,7 @@ export function useLtxStreamSession({
 
     if (nextTargetFingerprint !== targetFingerprintRef.current) {
       targetFingerprintRef.current = nextTargetFingerprint;
-      sendTargetUpdate(target);
+      sendNextSegmentUpdate(target);
     }
   }, [
     enabled,

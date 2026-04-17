@@ -32,8 +32,10 @@ export interface GenerateImageResult {
   usedGeneratedImage: boolean;
   usedStylePrefix: boolean;
   imageModel?: string;
-  imageModelPreset?: "nano-banana" | "flux";
+  imageModelPreset?: ImageModelPreset;
 }
+
+export type ImageModelPreset = "flux" | "nano-banana";
 
 export interface TranscriptToolData {
   name: string;
@@ -59,6 +61,7 @@ export interface ToolCallRequest {
   callId: string;
   cameraSnapshot?: CameraSnapshotPayload;
   referenceImageUrls?: string[];
+  imageModelPreset?: ImageModelPreset;
 }
 
 export interface ToolCallResponse {

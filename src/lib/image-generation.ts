@@ -2,9 +2,13 @@ import "server-only";
 
 import { fal } from "@fal-ai/client";
 
-import type { CameraSnapshotPayload, GenerateImageResult } from "@/lib/live-types";
+import type {
+  CameraSnapshotPayload,
+  GenerateImageResult,
+  ImageModelPreset,
+} from "@/lib/live-types";
 
-const DEFAULT_IMAGE_MODEL_PRESET = "nano-banana";
+const DEFAULT_IMAGE_MODEL_PRESET = "flux";
 const DEFAULT_FAL_MODEL_ID = "fal-ai/nano-banana-2/edit";
 const DEFAULT_FAL_TEXT_MODEL_ID = "fal-ai/nano-banana-2";
 const DEFAULT_FAL_TURBO_MODEL_ID = "fal-ai/flux-2";
@@ -25,8 +29,6 @@ const NANO_BANANA_FIXED_STYLE_PROMPT =
   "Top-down/isometric perspective, soft diffuse lighting, no harsh shadows.\n" +
   "Highly intricate yet composed and legible, like a museum illustration or architectural plate.\n" +
   "Illustration style similar to refined editorial illustration or architectural diagrams, not whimsical or cartoonish, not photorealistic. Make form elements look beautiful, well-organized, and native to the image / medium. Make sure they feel integrated into the picture. Content: ";
-
-export type ImageModelPreset = "nano-banana" | "flux";
 
 export type ImageGenerationStreamEvent =
   | { type: "started"; message: string }
@@ -57,11 +59,12 @@ function ensureFalConfigured() {
 }
 
 function normalizeImageModelPreset(value: string | undefined): ImageModelPreset {
-  return value === "flux" ? "flux" : "nano-banana";
+  return value === "nano-banana" ? "nano-banana" : DEFAULT_IMAGE_MODEL_PRESET;
 }
 
-function getImageGenerationSettings() {
-  const preset = normalizeImageModelPreset(process.env.LIVE_IMAGE_MODEL_PRESET);
+function getImageGenerationSettings(presetOverride?: ImageModelPreset) {
+  const preset =
+    presetOverride ?? normalizeImageModelPreset(process.env.LIVE_IMAGE_MODEL_PRESET);
 
   return {
     preset,
@@ -219,8 +222,9 @@ async function resolveGenerationInput(params: {
   useCurrentCameraImage?: boolean;
   referenceImageUrls?: string[];
   applyStylePrefix?: boolean;
+  imageModelPreset?: ImageModelPreset;
 }) {
-  const settings = getImageGenerationSettings();
+  const settings = getImageGenerationSettings(params.imageModelPreset);
   const usedStylePrefix = params.applyStylePrefix !== false;
   const prompt = composeFinalPrompt(params.contents, settings.preset, usedStylePrefix);
   const uploadedCameraReferenceImageUrl =
@@ -251,6 +255,7 @@ export async function streamGeneratedImage(
     useCurrentCameraImage?: boolean;
     referenceImageUrls?: string[];
     applyStylePrefix?: boolean;
+    imageModelPreset?: ImageModelPreset;
   },
   onEvent: (event: ImageGenerationStreamEvent) => Promise<void> | void,
 ): Promise<GenerateImageResult> {
@@ -385,6 +390,7 @@ export async function generateImage(params: {
   useCurrentCameraImage?: boolean;
   referenceImageUrls?: string[];
   applyStylePrefix?: boolean;
+  imageModelPreset?: ImageModelPreset;
 }): Promise<GenerateImageResult> {
   let finalResult: GenerateImageResult | null = null;
 

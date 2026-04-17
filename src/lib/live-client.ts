@@ -10,6 +10,7 @@ import {
 import type {
   CameraSnapshotPayload,
   GenerateImageResult,
+  ImageModelPreset,
   LivePermissionsState,
   LiveSessionStatus,
   TokenRouteResponse,
@@ -95,6 +96,7 @@ function sanitizeToolResultForModel(
     usedCameraImage: result.usedCameraImage,
     usedGeneratedImage: result.usedGeneratedImage,
     usedStylePrefix: result.usedStylePrefix,
+    imageModelPreset: result.imageModelPreset,
     seed: result.seed,
     imageReady: true,
   };
@@ -189,6 +191,8 @@ export class GeminiLiveClient {
 
   private latestGeneratedImageUrl: string | null = null;
 
+  private imageModelPreset: ImageModelPreset = "flux";
+
   constructor(handlers: LiveClientHandlers) {
     this.handlers = handlers;
   }
@@ -207,6 +211,10 @@ export class GeminiLiveClient {
 
   setMicrophoneEnabled(enabled: boolean): void {
     this.microphoneEnabled = enabled;
+  }
+
+  setImageModelPreset(preset: ImageModelPreset): void {
+    this.imageModelPreset = preset;
   }
 
   getCameraStream(): MediaStream | null {
@@ -418,6 +426,8 @@ export class GeminiLiveClient {
               ? [this.latestGeneratedImageUrl]
               : undefined
             : undefined,
+        imageModelPreset:
+          name === "generate_image" ? this.imageModelPreset : undefined,
       };
 
       this.handlers.onTranscriptEntry(

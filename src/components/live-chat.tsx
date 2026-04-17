@@ -31,6 +31,7 @@ import { GeminiLiveClient } from "@/lib/live-client";
 import { LTX_STREAM_SETTINGS, useLtxStreamSession } from "@/lib/ltx-stream";
 import { cn } from "@/lib/utils";
 import type {
+  ImageModelPreset,
   LivePermissionsState,
   LiveSessionStatus,
   StreamTarget,
@@ -89,6 +90,7 @@ export function LiveChat() {
   const [draft, setDraft] = useState("");
   const [microphoneEnabled, setMicrophoneEnabled] = useState(true);
   const [cameraEnabled, setCameraEnabled] = useState(false);
+  const [imageModelPreset, setImageModelPreset] = useState<ImageModelPreset>("flux");
   const [historyDrawerOpen, setHistoryDrawerOpen] = useState(false);
   const [streamPresentationEnabled, setStreamPresentationEnabled] = useState(false);
   const [selectedStageEntryId, setSelectedStageEntryId] = useState<string | null>(null);
@@ -133,6 +135,10 @@ export function LiveChat() {
       clientRef.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    clientRef.current?.setImageModelPreset(imageModelPreset);
+  }, [imageModelPreset]);
 
   const connected = status === "connected";
   const connectionBusy = status === "connecting" || status === "disconnecting";
@@ -379,6 +385,12 @@ export function LiveChat() {
     await clientRef.current?.setCameraEnabled(nextValue);
   };
 
+  const toggleImageModelPreset = () => {
+    setImageModelPreset((current) =>
+      current === "flux" ? "nano-banana" : "flux",
+    );
+  };
+
   const toggleStageStream = () => {
     if (!canEnableStageStream) {
       return;
@@ -621,6 +633,28 @@ export function LiveChat() {
                       ) : (
                         <VideoOffIcon className="size-5" />
                       )}
+                    </Button>
+                    <Button
+                      aria-label={
+                        imageModelPreset === "flux"
+                          ? "Switch image generation to HQ mode"
+                          : "Switch image generation to Draft mode"
+                      }
+                      className={cn(
+                        "h-12 rounded-full border-0 px-4 text-sm font-medium shadow-none",
+                        imageModelPreset === "flux"
+                          ? "bg-[var(--call-button-neutral)] text-[var(--call-fg)] hover:bg-[var(--call-button-neutral-hover)]"
+                          : "bg-[var(--call-button-active)] text-[var(--primary-foreground)] hover:bg-[var(--call-button-active-hover)]",
+                      )}
+                      onClick={toggleImageModelPreset}
+                      title={
+                        imageModelPreset === "flux"
+                          ? "Draft mode uses Flux"
+                          : "HQ mode uses Nano Banana 2"
+                      }
+                      type="button"
+                    >
+                      {imageModelPreset === "flux" ? "Draft" : "HQ"}
                     </Button>
                   </div>
                 </div>

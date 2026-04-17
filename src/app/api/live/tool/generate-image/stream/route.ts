@@ -1,5 +1,5 @@
 import { streamGeneratedImage } from "@/lib/image-generation";
-import type { ToolCallRequest } from "@/lib/live-types";
+import type { ImageModelPreset, ToolCallRequest } from "@/lib/live-types";
 
 export const runtime = "nodejs";
 
@@ -15,6 +15,10 @@ function isToolRequest(input: unknown): input is ToolCallRequest {
     typeof candidate.callId === "string" &&
     "args" in candidate
   );
+}
+
+function parseImageModelPreset(value: unknown): ImageModelPreset | undefined {
+  return value === "nano-banana" || value === "flux" ? value : undefined;
 }
 
 function parseGenerateImageRequest(request: ToolCallRequest) {
@@ -55,6 +59,7 @@ function parseGenerateImageRequest(request: ToolCallRequest) {
     referenceImageUrls: useLatestGeneratedImage ? request.referenceImageUrls : undefined,
     applyStylePrefix,
     cameraSnapshot: request.cameraSnapshot,
+    imageModelPreset: parseImageModelPreset(request.imageModelPreset),
   };
 }
 
@@ -142,7 +147,7 @@ export async function POST(request: Request) {
             error:
               error instanceof Error
                 ? error.message
-                : "Flux image generation failed unexpectedly.",
+                : "Image generation failed unexpectedly.",
           });
         } finally {
           controller.close();

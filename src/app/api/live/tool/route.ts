@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 
 import { generateImage } from "@/lib/image-generation";
-import type { ToolCallRequest, ToolCallResponse } from "@/lib/live-types";
+import type {
+  ImageModelPreset,
+  ToolCallRequest,
+  ToolCallResponse,
+} from "@/lib/live-types";
 
 export const runtime = "nodejs";
 
@@ -42,6 +46,10 @@ function getTimeResult(args: unknown) {
   );
 }
 
+function parseImageModelPreset(value: unknown): ImageModelPreset | undefined {
+  return value === "nano-banana" || value === "flux" ? value : undefined;
+}
+
 async function getGenerateImageResult(request: ToolCallRequest) {
   const parsedArgs =
     request.args && typeof request.args === "object"
@@ -80,6 +88,7 @@ async function getGenerateImageResult(request: ToolCallRequest) {
     useCurrentCameraImage,
     referenceImageUrls: useLatestGeneratedImage ? request.referenceImageUrls : undefined,
     applyStylePrefix,
+    imageModelPreset: parseImageModelPreset(request.imageModelPreset),
   });
 }
 

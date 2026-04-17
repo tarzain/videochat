@@ -189,7 +189,7 @@ export function LiveChat() {
         kind: "image",
         imageUrl: stageDisplayEntry.tool.imageUrl,
         isPreview: outputStatus,
-        title: outputStatus ? "vidi is presenting" : "vidi presented",
+        title: outputStatus ? "vidspace is presenting" : "vidspace presented",
         subtitle: outputStatus
           ? "Flux preview image"
           : "Latest generated image on stage",
@@ -206,7 +206,7 @@ export function LiveChat() {
 
     return {
       kind: "idle",
-      title: connected ? "vidi is live" : "vidi camera is off",
+      title: connected ? "vidspace is live" : "vidspace camera is off",
       subtitle: imageStatusEntry?.text ?? "Waiting to speak or present something visual.",
     };
   }, [connected, stageDisplayEntry, transcript]);
@@ -422,7 +422,7 @@ export function LiveChat() {
             <header className="absolute inset-x-0 top-0 z-20 flex items-start justify-between gap-4 px-4 py-4 md:px-6 md:py-5">
               <div className="flex items-center gap-3">
                 <div className="text-[1.65rem] font-medium tracking-tight text-[var(--call-fg)]">
-                  vidi
+                  vidspace
                 </div>
               </div>
 
@@ -449,7 +449,7 @@ export function LiveChat() {
                     <div className="flex flex-wrap items-center gap-2">
                       <div className="flex items-center gap-2 rounded-full bg-[var(--call-chip-bg)] px-3 py-1.5 text-sm text-[var(--call-chip-fg)]">
                         <ImageIcon className="size-4" />
-                        {stageVisual.isPreview ? "vidi preview" : "vidi presenting"}
+                        {stageVisual.isPreview ? "vidspace preview" : "vidspace presenting"}
                       </div>
                       {!stageVisual.isPreview ? (
                         <Button
@@ -479,7 +479,7 @@ export function LiveChat() {
                           ref={stageStreamVideoRef}
                         />
                         <img
-                          alt="vidi presentation"
+                          alt="vidspace presentation"
                           className={cn(
                             "h-full max-h-full w-full max-w-full rounded-[12px] object-contain transition-opacity duration-300",
                             stageImageVisible ? "opacity-100" : "pointer-events-none opacity-0",
@@ -489,7 +489,7 @@ export function LiveChat() {
                       </div>
                     ) : (
                       <img
-                        alt="vidi presentation"
+                        alt="vidspace presentation"
                         className="h-full max-h-full w-full max-w-full rounded-[12px] object-contain"
                         src={stageVisual.imageUrl}
                       />
@@ -508,12 +508,12 @@ export function LiveChat() {
                   <ParticipantTile
                     active={stageVisual.kind === "image"}
                     label={stageVisual.kind === "image" ? "Presenting" : connected ? "In call" : "Standby"}
-                    title="vidi"
+                    title="vidspace"
                   >
                     {stageVisual.kind === "image" ? (
                       <div className="flex h-full min-h-0 items-center justify-center p-3">
                         <img
-                          alt="vidi presentation preview"
+                          alt="vidspace presentation preview"
                           className="h-full max-h-full w-full max-w-full rounded-lg object-contain"
                           src={stageVisual.imageUrl}
                         />
@@ -521,7 +521,7 @@ export function LiveChat() {
                     ) : (
                       <div className="flex h-full items-center justify-center bg-[var(--call-panel-muted)]">
                         <div className="text-xl font-medium tracking-tight text-[var(--call-fg-soft)]">
-                          vidi
+                          vidspace
                         </div>
                       </div>
                     )}
@@ -554,7 +554,7 @@ export function LiveChat() {
               {activeCaption ? (
                 <div className="pointer-events-none absolute bottom-36 left-1/2 z-20 w-[min(94vw,1080px)] -translate-x-1/2 px-3 md:bottom-40">
                   <div className="mx-auto rounded-2xl bg-[var(--call-caption-bg)] px-4 py-3 text-center text-base leading-7 text-[var(--call-fg)] shadow-none md:text-lg">
-                    <span className="font-medium text-[var(--call-caption-label)]">vidi:</span>{" "}
+                    <span className="font-medium text-[var(--call-caption-label)]">vidspace:</span>{" "}
                     {activeCaption}
                   </div>
                 </div>

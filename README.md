@@ -1,4 +1,4 @@
-# Gemini Live Next.js Demo
+# vidspace
 
 Minimal Next.js App Router app that:
 

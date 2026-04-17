@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Gemini Live Video Chat",
-  description: "Next.js Gemini Live demo with mic, camera, audio playback, and tool calls.",
+  title: "vidspace",
+  description: "Live AI video chat with image generation, editing, and animated stage streaming.",
 };
 
 export default function RootLayout({
